@@ -10,7 +10,8 @@
   .page{max-width:800px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 20px rgba(0,0,0,.1);overflow:hidden}
   .header{background:#2B6CB0;color:white;padding:28px 36px}
   .header h1{font-size:22px;font-weight:800;margin-bottom:4px}
-  .header p{font-size:13px;opacity:.85}
+  .header p{font-size:13px;opacity:.85;margin-bottom:0}
+  .header .contact-line{margin-top:10px;font-size:12px;opacity:.9;background:rgba(0,0,0,.15);border-radius:5px;padding:8px 14px;display:inline-block}
   .header .url-box{margin-top:14px;background:rgba(255,255,255,.15);border-radius:6px;padding:10px 16px;font-family:monospace;font-size:13px;word-break:break-all}
   .header .url-label{font-size:11px;opacity:.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
   .content{padding:30px 36px}
@@ -20,9 +21,10 @@
   p{line-height:1.6;margin-bottom:10px;color:#4A5568}
   ul,ol{padding-left:20px;margin-bottom:10px}
   li{margin-bottom:5px;color:#4A5568;line-height:1.5}
-  .role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  .role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:14px 0}
   .role-card{border-radius:8px;padding:14px;border:1px solid #E2E8F0}
   .role-card.admin{background:#EBF4FF;border-color:#BEE3F8}
+  .role-card.moa{background:#FAF5FF;border-color:#D6BCFA}
   .role-card.assist{background:#F0FFF4;border-color:#9AE6B4}
   .role-card.co{background:#FFFFF0;border-color:#FAF089}
   .role-card h4{font-size:13px;font-weight:800;margin-bottom:6px}
@@ -30,9 +32,10 @@
   .role-card ul{padding-left:16px}
   .role-card li{font-size:12px;margin-bottom:3px}
   .admin h4{color:#2B6CB0}
+  .moa h4{color:#6B46C1}
   .assist h4{color:#276749}
   .co h4{color:#975A16}
-  .step-list{list-style:none;padding:0;counter-reset:steps}
+  .step-list{list-style:none;padding:0}
   .step-list li{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
   .step-num{min-width:26px;height:26px;border-radius:50%;background:#2B6CB0;color:white;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
   .step-txt strong{display:block;font-size:13px;color:#2D3748;margin-bottom:2px}
@@ -45,12 +48,12 @@
   .warn p{font-size:12px;color:#2D3748;margin:4px 0 0}
   .tab-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
   .tab-chip{background:#EBF4FF;color:#2B6CB0;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #BEE3F8}
-  .code-box{background:#F7FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px 14px;font-family:monospace;font-size:13px;color:#2D3748;margin:8px 0}
-  .footer{background:#F7FAFC;padding:16px 36px;border-top:1px solid #E2E8F0;font-size:11px;color:#718096;display:flex;justify-content:space-between;align-items:center}
+  .footer{background:#F7FAFC;padding:16px 36px;border-top:1px solid #E2E8F0;font-size:11px;color:#718096;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
   table{width:100%;border-collapse:collapse;margin:10px 0}
   th{background:#EBF4FF;color:#2B6CB0;font-size:12px;font-weight:700;padding:8px 12px;text-align:left;border-bottom:2px solid #BEE3F8}
   td{padding:8px 12px;border-bottom:1px solid #E2E8F0;font-size:12px;color:#4A5568;vertical-align:top}
   tr:last-child td{border-bottom:none}
+  a{color:#2B6CB0}
   @media print{
     body{background:white;padding:0}
     .page{box-shadow:none;border-radius:0}
@@ -64,43 +67,60 @@
 
   <div class="header">
     <h1>📋 Compte rendu de chantier — Mode opératoire</h1>
-    <p>Guide d'utilisation pour tous les intervenants</p>
+    <p>Guide d'utilisation pour tous les intervenants du chantier</p>
+    <div class="contact-line">
+      👷 Maître d'œuvre &amp; administrateur : <strong>Thierry Bethfort</strong> —
+      <a href="mailto:thierry.bethfort@technopieux.fr" style="color:white">thierry.bethfort@technopieux.fr</a>
+    </div>
     <div class="url-box">
       <div class="url-label">Adresse d'accès (URL unique à conserver)</div>
-      ➜ https://[votre-pseudo].github.io/chantier-cr/chantier.html
+      ➜ https://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html
     </div>
   </div>
 
   <div class="content">
 
     <!-- ACCES -->
-    <h2>🔑 Accès & connexion</h2>
+    <h2>🔑 Accès &amp; connexion</h2>
     <p>Le compte rendu est une <strong>page web unique</strong>, accessible depuis n'importe quel navigateur (PC, tablette, smartphone). Toutes vos modifications sont sauvegardées automatiquement en ligne — <strong>aucune installation n'est nécessaire</strong>.</p>
 
     <ul class="step-list">
       <li><span class="step-num">1</span><div class="step-txt"><strong>Ouvrez le lien</strong><span>Tapez (ou cliquez) l'URL ci-dessus dans votre navigateur. La page se charge en quelques secondes.</span></div></li>
-      <li><span class="step-num">2</span><div class="step-txt"><strong>Entrez votre code d'accès</strong><span>Chaque entreprise dispose d'un code personnel fourni par le maître d'ouvrage. Saisissez-le dans le champ "Code d'accès" et cliquez <em>Entrer</em>.</span></div></li>
+      <li><span class="step-num">2</span><div class="step-txt"><strong>Entrez votre code d'accès</strong><span>Chaque intervenant dispose d'un code personnel communiqué par Thierry Bethfort. Saisissez-le dans le champ "Code d'accès" et cliquez <em>Entrer</em>.</span></div></li>
       <li><span class="step-num">3</span><div class="step-txt"><strong>Vous êtes connecté</strong><span>Le tableau de bord s'affiche. Votre nom d'entreprise apparaît en haut à droite.</span></div></li>
     </ul>
 
     <div class="warn">
-      <strong>⚠️ Code perdu ?</strong>
-      <p>Contactez directement le maître d'ouvrage pour récupérer votre code. Ne partagez pas votre code avec d'autres personnes.</p>
+      <strong>⚠️ Code perdu ou problème de connexion ?</strong>
+      <p>Contactez Thierry Bethfort : <strong>thierry.bethfort@technopieux.fr</strong><br>
+      Ne partagez pas votre code avec d'autres personnes.</p>
     </div>
 
     <!-- ROLES -->
     <h2>👥 Les rôles et leurs droits</h2>
     <div class="role-grid">
       <div class="role-card admin">
-        <h4>👑 Admin<span>Maître d'ouvrage</span></h4>
+        <h4>👑 Maître d'œuvre<span>Thierry Bethfort — Administrateur</span></h4>
         <ul>
-          <li>Accès complet</li>
+          <li>Accès complet à toutes les fonctions</li>
           <li>Créer / modifier / supprimer des tâches</li>
-          <li>Gérer les entreprises</li>
+          <li>Gérer les entreprises et les codes d'accès</li>
           <li>Modifier le planning</li>
-          <li>Uploader des documents</li>
-          <li>Modifier les paramètres</li>
+          <li>Uploader et supprimer des documents</li>
+          <li>Modifier les paramètres du projet</li>
           <li>Exporter le CR</li>
+        </ul>
+      </div>
+      <div class="role-card moa">
+        <h4>🏠 Maître d'ouvrage<span>Client — Accès étendu</span></h4>
+        <ul>
+          <li>Créer / modifier des tâches</li>
+          <li>Uploader des documents</li>
+          <li>Annoter les tâches</li>
+          <li>Voir tout le tableau de bord</li>
+          <li>Modifier le planning</li>
+          <li>Exporter le CR</li>
+          <li style="color:#C05621">✗ Paramètres non accessibles</li>
         </ul>
       </div>
       <div class="role-card assist">
@@ -144,7 +164,7 @@
         <tr><td><strong>📅 Planning</strong></td><td>Grille Gantt 44 semaines (juillet 2026 → mai 2027). Les entreprises peuvent cocher leurs semaines de présence.</td></tr>
         <tr><td><strong>📒 Annuaire</strong></td><td>Coordonnées de tous les intervenants (nom, adresse, email, téléphone, contact).</td></tr>
         <tr><td><strong>📁 Documents</strong></td><td>Plans, photos, PDF. Filtrable par phase. Cliquez "Ouvrir" pour visualiser.</td></tr>
-        <tr><td><strong>⚙️ Paramètres</strong></td><td><em>Admin uniquement.</em> Gestion des codes, couleur, export/import.</td></tr>
+        <tr><td><strong>⚙️ Paramètres</strong></td><td><em>Maître d'œuvre uniquement.</em> Gestion des codes, couleur, export/import.</td></tr>
       </tbody>
     </table>
 
@@ -181,7 +201,7 @@
     </ol>
 
     <!-- SAUVEGARDE -->
-    <h2>💾 Sauvegarde & synchronisation</h2>
+    <h2>💾 Sauvegarde &amp; synchronisation</h2>
 
     <p>La sauvegarde est <strong>entièrement automatique</strong>. Dès que vous enregistrez une action, annotation ou modification, les données sont envoyées sur le serveur cloud et instantanément disponibles pour tous.</p>
 
@@ -193,13 +213,13 @@
 
     <div class="tip">
       <strong>💡 Où retrouver le CR à chaque visite ?</strong>
-      <p>Toujours la même URL — marquez-la en favori dans votre navigateur. Chaque connexion charge automatiquement les données les plus récentes.</p>
+      <p>Toujours la même URL — marquez-la en favori dans votre navigateur (Ctrl+D). Chaque connexion charge automatiquement les données les plus récentes.</p>
     </div>
 
     <!-- EXPORT -->
     <h2>📤 Exporter et partager le compte rendu</h2>
 
-    <p><em>(Admin et Assistante uniquement)</em></p>
+    <p><em>(Maître d'œuvre, Maître d'ouvrage et Assistante)</em></p>
 
     <h3>Exporter en HTML partageable (pour envoi par mail)</h3>
     <ol>
@@ -219,10 +239,10 @@
     <h2>✅ Bonnes pratiques</h2>
     <ul>
       <li><strong>Enregistrez l'URL en favori</strong> dès la première connexion (Ctrl+D)</li>
-      <li><strong>Ne partagez pas votre code</strong> avec d'autres entreprises</li>
+      <li><strong>Ne partagez pas votre code</strong> avec d'autres intervenants</li>
       <li>Pour toute <strong>question sur une tâche</strong>, utilisez l'annotation plutôt qu'un email — la réponse sera visible de tous</li>
       <li>Si la page semble "vieille" (données obsolètes), cliquez le bouton <strong>🔄 Actualiser</strong> en haut</li>
-      <li>En cas de problème technique, contactez le maître d'ouvrage</li>
+      <li>En cas de problème technique, contactez Thierry Bethfort</li>
     </ul>
 
     <!-- CONTACTS -->
@@ -230,10 +250,11 @@
     <table>
       <thead><tr><th>Problème</th><th>À faire</th></tr></thead>
       <tbody>
-        <tr><td>Je n'arrive pas à me connecter</td><td>Vérifiez votre code (majuscules). Sinon, contactez le maître d'ouvrage.</td></tr>
+        <tr><td>Je n'arrive pas à me connecter / code perdu</td><td>Contactez <strong>Thierry Bethfort</strong> : <a href="mailto:thierry.bethfort@technopieux.fr">thierry.bethfort@technopieux.fr</a></td></tr>
         <tr><td>La page ne charge pas</td><td>Vérifiez votre connexion internet. Réessayez dans quelques minutes.</td></tr>
         <tr><td>Je ne vois pas mes annotations</td><td>Cliquez le bouton 🔄 Actualiser pour recharger les données.</td></tr>
-        <tr><td>Je veux modifier une information de mon entreprise</td><td>Contactez le maître d'ouvrage — seul l'admin peut modifier l'annuaire.</td></tr>
+        <tr><td>Je veux modifier une information de mon entreprise</td><td>Contactez <strong>Thierry Bethfort</strong> : <a href="mailto:thierry.bethfort@technopieux.fr">thierry.bethfort@technopieux.fr</a> — seul l'administrateur peut modifier l'annuaire.</td></tr>
+        <tr><td>Problème technique ou anomalie</td><td>Contactez <strong>Thierry Bethfort</strong> : <a href="mailto:thierry.bethfort@technopieux.fr">thierry.bethfort@technopieux.fr</a></td></tr>
       </tbody>
     </table>
 
@@ -241,7 +262,7 @@
 
   <div class="footer">
     <span>Compte rendu de chantier — Document d'utilisation</span>
-    <span>À conserver et à imprimer si besoin</span>
+    <span>Responsable : Thierry Bethfort — <a href="mailto:thierry.bethfort@technopieux.fr">thierry.bethfort@technopieux.fr</a></span>
   </div>
 
 </div>
