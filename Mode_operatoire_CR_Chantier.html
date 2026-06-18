@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mode opératoire — Compte rendu de chantier</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1a202c;background:#f7fafc;padding:30px 20px}
+  .page{max-width:800px;margin:0 auto;background:white;border-radius:10px;box-shadow:0 2px 20px rgba(0,0,0,.1);overflow:hidden}
+  .header{background:#2B6CB0;color:white;padding:28px 36px}
+  .header h1{font-size:22px;font-weight:800;margin-bottom:4px}
+  .header p{font-size:13px;opacity:.85}
+  .header .url-box{margin-top:14px;background:rgba(255,255,255,.15);border-radius:6px;padding:10px 16px;font-family:monospace;font-size:13px;word-break:break-all}
+  .header .url-label{font-size:11px;opacity:.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+  .content{padding:30px 36px}
+  h2{font-size:15px;font-weight:800;color:#2B6CB0;margin:28px 0 14px;padding-bottom:6px;border-bottom:2px solid #EBF4FF;display:flex;align-items:center;gap:8px}
+  h2:first-child{margin-top:0}
+  h3{font-size:13px;font-weight:700;color:#2D3748;margin:14px 0 8px}
+  p{line-height:1.6;margin-bottom:10px;color:#4A5568}
+  ul,ol{padding-left:20px;margin-bottom:10px}
+  li{margin-bottom:5px;color:#4A5568;line-height:1.5}
+  .role-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  .role-card{border-radius:8px;padding:14px;border:1px solid #E2E8F0}
+  .role-card.admin{background:#EBF4FF;border-color:#BEE3F8}
+  .role-card.assist{background:#F0FFF4;border-color:#9AE6B4}
+  .role-card.co{background:#FFFFF0;border-color:#FAF089}
+  .role-card h4{font-size:13px;font-weight:800;margin-bottom:6px}
+  .role-card h4 span{display:block;font-size:11px;font-weight:400;color:#718096;margin-top:2px}
+  .role-card ul{padding-left:16px}
+  .role-card li{font-size:12px;margin-bottom:3px}
+  .admin h4{color:#2B6CB0}
+  .assist h4{color:#276749}
+  .co h4{color:#975A16}
+  .step-list{list-style:none;padding:0;counter-reset:steps}
+  .step-list li{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+  .step-num{min-width:26px;height:26px;border-radius:50%;background:#2B6CB0;color:white;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .step-txt strong{display:block;font-size:13px;color:#2D3748;margin-bottom:2px}
+  .step-txt span{font-size:12px;color:#718096}
+  .tip{background:#EBF4FF;border-left:3px solid #2B6CB0;border-radius:4px;padding:10px 14px;margin:12px 0}
+  .tip strong{color:#2B6CB0;font-size:12px}
+  .tip p{font-size:12px;color:#2D3748;margin:4px 0 0}
+  .warn{background:#FFFFF0;border-left:3px solid #D69E2E;border-radius:4px;padding:10px 14px;margin:12px 0}
+  .warn strong{color:#975A16;font-size:12px}
+  .warn p{font-size:12px;color:#2D3748;margin:4px 0 0}
+  .tab-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tab-chip{background:#EBF4FF;color:#2B6CB0;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;border:1px solid #BEE3F8}
+  .code-box{background:#F7FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px 14px;font-family:monospace;font-size:13px;color:#2D3748;margin:8px 0}
+  .footer{background:#F7FAFC;padding:16px 36px;border-top:1px solid #E2E8F0;font-size:11px;color:#718096;display:flex;justify-content:space-between;align-items:center}
+  table{width:100%;border-collapse:collapse;margin:10px 0}
+  th{background:#EBF4FF;color:#2B6CB0;font-size:12px;font-weight:700;padding:8px 12px;text-align:left;border-bottom:2px solid #BEE3F8}
+  td{padding:8px 12px;border-bottom:1px solid #E2E8F0;font-size:12px;color:#4A5568;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  @media print{
+    body{background:white;padding:0}
+    .page{box-shadow:none;border-radius:0}
+    h2{page-break-after:avoid}
+    .role-grid{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>📋 Compte rendu de chantier — Mode opératoire</h1>
+    <p>Guide d'utilisation pour tous les intervenants</p>
+    <div class="url-box">
+      <div class="url-label">Adresse d'accès (URL unique à conserver)</div>
+      ➜ https://[votre-pseudo].github.io/chantier-cr/chantier.html
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ACCES -->
+    <h2>🔑 Accès & connexion</h2>
+    <p>Le compte rendu est une <strong>page web unique</strong>, accessible depuis n'importe quel navigateur (PC, tablette, smartphone). Toutes vos modifications sont sauvegardées automatiquement en ligne — <strong>aucune installation n'est nécessaire</strong>.</p>
+
+    <ul class="step-list">
+      <li><span class="step-num">1</span><div class="step-txt"><strong>Ouvrez le lien</strong><span>Tapez (ou cliquez) l'URL ci-dessus dans votre navigateur. La page se charge en quelques secondes.</span></div></li>
+      <li><span class="step-num">2</span><div class="step-txt"><strong>Entrez votre code d'accès</strong><span>Chaque entreprise dispose d'un code personnel fourni par le maître d'ouvrage. Saisissez-le dans le champ "Code d'accès" et cliquez <em>Entrer</em>.</span></div></li>
+      <li><span class="step-num">3</span><div class="step-txt"><strong>Vous êtes connecté</strong><span>Le tableau de bord s'affiche. Votre nom d'entreprise apparaît en haut à droite.</span></div></li>
+    </ul>
+
+    <div class="warn">
+      <strong>⚠️ Code perdu ?</strong>
+      <p>Contactez directement le maître d'ouvrage pour récupérer votre code. Ne partagez pas votre code avec d'autres personnes.</p>
+    </div>
+
+    <!-- ROLES -->
+    <h2>👥 Les rôles et leurs droits</h2>
+    <div class="role-grid">
+      <div class="role-card admin">
+        <h4>👑 Admin<span>Maître d'ouvrage</span></h4>
+        <ul>
+          <li>Accès complet</li>
+          <li>Créer / modifier / supprimer des tâches</li>
+          <li>Gérer les entreprises</li>
+          <li>Modifier le planning</li>
+          <li>Uploader des documents</li>
+          <li>Modifier les paramètres</li>
+          <li>Exporter le CR</li>
+        </ul>
+      </div>
+      <div class="role-card assist">
+        <h4>📝 Assistante<span>Collaborateur interne</span></h4>
+        <ul>
+          <li>Créer / modifier des tâches</li>
+          <li>Uploader des documents</li>
+          <li>Annoter les tâches</li>
+          <li>Voir tout le tableau de bord</li>
+          <li>Exporter le CR</li>
+        </ul>
+      </div>
+      <div class="role-card co">
+        <h4>🏗️ Entreprise<span>Intervenants chantier</span></h4>
+        <ul>
+          <li>Voir les tâches et le CR</li>
+          <li>Ajouter des annotations</li>
+          <li>Mettre à jour son planning</li>
+          <li>Consulter les documents</li>
+          <li>Voir l'annuaire</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <h2>🗂️ Les onglets de l'application</h2>
+    <div class="tab-row">
+      <span class="tab-chip">📊 Tableau de bord</span>
+      <span class="tab-chip">📋 Compte rendu</span>
+      <span class="tab-chip">📅 Planning</span>
+      <span class="tab-chip">📒 Annuaire</span>
+      <span class="tab-chip">📁 Documents</span>
+      <span class="tab-chip">⚙️ Paramètres</span>
+    </div>
+
+    <table>
+      <thead><tr><th>Onglet</th><th>Contenu</th></tr></thead>
+      <tbody>
+        <tr><td><strong>📊 Tableau de bord</strong></td><td>Vue synthétique : compteurs de tâches urgentes/en cours, avancement par phase</td></tr>
+        <tr><td><strong>📋 Compte rendu</strong></td><td>Liste de toutes les tâches/actions par phase. Filtres par statut et entreprise. Annotations visibles.</td></tr>
+        <tr><td><strong>📅 Planning</strong></td><td>Grille Gantt 44 semaines (juillet 2026 → mai 2027). Les entreprises peuvent cocher leurs semaines de présence.</td></tr>
+        <tr><td><strong>📒 Annuaire</strong></td><td>Coordonnées de tous les intervenants (nom, adresse, email, téléphone, contact).</td></tr>
+        <tr><td><strong>📁 Documents</strong></td><td>Plans, photos, PDF. Filtrable par phase. Cliquez "Ouvrir" pour visualiser.</td></tr>
+        <tr><td><strong>⚙️ Paramètres</strong></td><td><em>Admin uniquement.</em> Gestion des codes, couleur, export/import.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- CE QUE FAIT UNE ENTREPRISE -->
+    <h2>🏗️ Ce que fait une entreprise — étape par étape</h2>
+
+    <h3>Ajouter une annotation sur une tâche</h3>
+    <ol>
+      <li>Allez sur l'onglet <strong>Compte rendu</strong></li>
+      <li>Trouvez la tâche qui vous concerne</li>
+      <li>Cliquez le bouton <strong>💬 Annoter</strong> sur la tâche</li>
+      <li>Saisissez votre commentaire (avancement, question, information...)</li>
+      <li>Cliquez <strong>Enregistrer</strong> → votre annotation apparaît immédiatement sous la tâche</li>
+    </ol>
+
+    <div class="tip">
+      <strong>💡 Bon à savoir</strong>
+      <p>Chaque entreprise ne voit que ses propres annotations en mode édition, mais peut lire les annotations des autres. Votre annotation est horodatée et porte le nom de votre entreprise.</p>
+    </div>
+
+    <h3>Mettre à jour votre planning</h3>
+    <ol>
+      <li>Allez sur l'onglet <strong>Planning</strong></li>
+      <li>Repérez la ligne de votre entreprise</li>
+      <li>Cochez (ou décochez) les semaines où vous êtes présent sur le chantier</li>
+      <li>La sauvegarde est automatique</li>
+    </ol>
+
+    <h3>Consulter un document (plan, photo)</h3>
+    <ol>
+      <li>Allez sur l'onglet <strong>Documents</strong></li>
+      <li>Utilisez le filtre "Phase" si nécessaire</li>
+      <li>Cliquez <strong>👁 Ouvrir</strong> sur le document souhaité — il s'ouvre dans un nouvel onglet</li>
+    </ol>
+
+    <!-- SAUVEGARDE -->
+    <h2>💾 Sauvegarde & synchronisation</h2>
+
+    <p>La sauvegarde est <strong>entièrement automatique</strong>. Dès que vous enregistrez une action, annotation ou modification, les données sont envoyées sur le serveur cloud et instantanément disponibles pour tous.</p>
+
+    <ul>
+      <li>Pas besoin de cliquer "Sauvegarder la page"</li>
+      <li>Pas besoin de renvoyer le fichier à qui que ce soit</li>
+      <li>Si vous travaillez à plusieurs en même temps, cliquez le bouton <strong>🔄</strong> (haut de page) pour actualiser et voir les dernières modifications des autres</li>
+    </ul>
+
+    <div class="tip">
+      <strong>💡 Où retrouver le CR à chaque visite ?</strong>
+      <p>Toujours la même URL — marquez-la en favori dans votre navigateur. Chaque connexion charge automatiquement les données les plus récentes.</p>
+    </div>
+
+    <!-- EXPORT -->
+    <h2>📤 Exporter et partager le compte rendu</h2>
+
+    <p><em>(Admin et Assistante uniquement)</em></p>
+
+    <h3>Exporter en HTML partageable (pour envoi par mail)</h3>
+    <ol>
+      <li>Cliquez le bouton <strong>📤 Exporter CR</strong> dans l'entête</li>
+      <li>Un fichier <code>CR_N01_DATE.html</code> se télécharge automatiquement</li>
+      <li>Joignez ce fichier à votre email — les destinataires l'ouvrent dans leur navigateur, sans connexion ni mot de passe</li>
+    </ol>
+
+    <h3>Imprimer ou créer un PDF</h3>
+    <ol>
+      <li>Depuis le navigateur, faites <strong>Ctrl+P</strong> (ou ⌘+P sur Mac)</li>
+      <li>Choisissez "Enregistrer en PDF" comme imprimante</li>
+      <li>L'impression est optimisée format A4 — les menus et boutons sont masqués automatiquement</li>
+    </ol>
+
+    <!-- CONSEILS -->
+    <h2>✅ Bonnes pratiques</h2>
+    <ul>
+      <li><strong>Enregistrez l'URL en favori</strong> dès la première connexion (Ctrl+D)</li>
+      <li><strong>Ne partagez pas votre code</strong> avec d'autres entreprises</li>
+      <li>Pour toute <strong>question sur une tâche</strong>, utilisez l'annotation plutôt qu'un email — la réponse sera visible de tous</li>
+      <li>Si la page semble "vieille" (données obsolètes), cliquez le bouton <strong>🔄 Actualiser</strong> en haut</li>
+      <li>En cas de problème technique, contactez le maître d'ouvrage</li>
+    </ul>
+
+    <!-- CONTACTS -->
+    <h2>📞 Contact en cas de problème</h2>
+    <table>
+      <thead><tr><th>Problème</th><th>À faire</th></tr></thead>
+      <tbody>
+        <tr><td>Je n'arrive pas à me connecter</td><td>Vérifiez votre code (majuscules). Sinon, contactez le maître d'ouvrage.</td></tr>
+        <tr><td>La page ne charge pas</td><td>Vérifiez votre connexion internet. Réessayez dans quelques minutes.</td></tr>
+        <tr><td>Je ne vois pas mes annotations</td><td>Cliquez le bouton 🔄 Actualiser pour recharger les données.</td></tr>
+        <tr><td>Je veux modifier une information de mon entreprise</td><td>Contactez le maître d'ouvrage — seul l'admin peut modifier l'annuaire.</td></tr>
+      </tbody>
+    </table>
+
+  </div>
+
+  <div class="footer">
+    <span>Compte rendu de chantier — Document d'utilisation</span>
+    <span>À conserver et à imprimer si besoin</span>
+  </div>
+
+</div>
+</body>
+</html>

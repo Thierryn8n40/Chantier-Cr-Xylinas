@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compte Rendu de Chantier</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root {
+  --p: #2B6CB0; --pl: #BEE3F8; --pd: #1A365D;
+  --bg: #EBF8FF; --white: #FFFFFF;
+  --urgent: #C05621; --urgentbg: #FFF5F5;
+  --todo: #2B6CB0; --todobg: #EBF8FF;
+  --wait: #285E61; --waitbg: #E6FFFA;
+  --done: #276749; --donebg: #F0FFF4;
+  --txt: #1A202C; --muted: #718096; --border: #BEE3F8;
+  --ph1: #2B6CB0; --ph2: #6B46C1;
+  --r: 8px; --shadow: 0 2px 8px rgba(43,108,176,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
+
+/* LOGIN */
+#login{position:fixed;inset:0;background:var(--pd);display:flex;align-items:center;justify-content:center;z-index:1000}
+.lbox{background:white;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.lbox h1{color:var(--p);font-size:22px;margin-bottom:6px}
+.lbox p{color:var(--muted);font-size:12px;margin-bottom:24px}
+#logo-zone{width:72px;height:72px;border:2px dashed var(--border);border-radius:10px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);cursor:pointer;overflow:hidden}
+#logo-zone img{width:100%;height:100%;object-fit:contain}
+.lbox input[type=password]{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:var(--r);font-size:16px;letter-spacing:3px;text-align:center;margin-bottom:10px}
+.lbox input:focus{outline:none;border-color:var(--p)}
+.lbtn{width:100%;padding:12px;background:var(--p);color:white;border:none;border-radius:var(--r);font-size:15px;font-weight:700;cursor:pointer}
+.lbtn:hover{background:var(--pd)}
+#lerr{color:var(--urgent);font-size:12px;margin-top:8px;display:none}
+
+/* LAYOUT */
+#app{display:none;flex-direction:column;min-height:100vh}
+header{background:var(--pd);color:white;padding:0 20px;display:flex;align-items:center;gap:12px;height:52px;position:sticky;top:0;z-index:100;flex-shrink:0}
+#hlogo{width:34px;height:34px;border:1px dashed rgba(255,255,255,.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.4);cursor:pointer;overflow:hidden;flex-shrink:0}
+#hlogo img{width:100%;height:100%;object-fit:contain}
+header h1{font-size:15px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ubadge{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;font-size:11px;white-space:nowrap}
+#logoutbtn{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:11px;white-space:nowrap}
+
+nav{background:white;border-bottom:2px solid var(--border);padding:0 20px;display:flex;overflow-x:auto;flex-shrink:0}
+nav button{padding:13px 16px;border:none;background:none;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+nav button.on{color:var(--p);border-bottom-color:var(--p)}
+nav button:hover{color:var(--p)}
+
+main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
+.tab{display:none}
+.tab.on{display:block}
+
+/* CARDS */
+.card{background:white;border-radius:var(--r);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;border:1px solid var(--border)}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:gap}
+.ct{font-size:15px;font-weight:700;color:var(--pd)}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+.scard{background:white;border-radius:var(--r);padding:16px;text-align:center;box-shadow:var(--shadow);border:1px solid var(--border)}
+.snum{font-size:32px;font-weight:800;color:var(--p)}
+.slbl{font-size:11px;color:var(--muted);margin-top:4px}
+.scard.u .snum{color:var(--urgent)}
+.scard.d .snum{color:var(--done)}
+
+/* TASK */
+.ti{padding:10px 14px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;background:white}
+.ti.urgent{border-left:4px solid var(--urgent)}
+.ti.a-faire{border-left:4px solid var(--todo)}
+.ti.attendu{border-left:4px solid var(--wait)}
+.ti.fait{border-left:4px solid var(--done);opacity:.65}
+.tb{flex:1;min-width:0}
+.ttl{font-weight:600;margin-bottom:3px;word-break:break-word}
+.tmeta{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tact{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
+
+/* STATUS BADGE */
+.sb{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.sb.urgent{background:var(--urgentbg);color:var(--urgent);border:1px solid #FED7D7}
+.sb.a-faire{background:var(--todobg);color:var(--todo);border:1px solid #BEE3F8}
+.sb.attendu{background:var(--waitbg);color:var(--wait);border:1px solid #B2F5EA}
+.sb.fait{background:var(--donebg);color:var(--done);border:1px solid #9AE6B4}
+.pb{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:white}
+.ph1{background:var(--ph1)}.ph2{background:var(--ph2)}
+
+/* BUTTONS */
+.btn{padding:5px 12px;border-radius:var(--r);border:none;cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+.bto{background:transparent;border:1.5px solid var(--border);color:var(--p)}
+.bto:hover{background:var(--pl)}
+.bta{background:var(--p);color:white;border:none}
+.bta:hover{background:var(--pd)}
+.btd{background:var(--urgentbg);color:var(--urgent);border:1px solid #FED7D7}
+.btg{background:var(--donebg);color:var(--done);border:1px solid #9AE6B4}
+.addbtn{background:var(--p);color:white;border:none;border-radius:var(--r);padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.addbtn:hover{background:var(--pd)}
+
+/* FORMS */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--pd);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:var(--r);font-size:13px;color:var(--txt);background:white;font-family:inherit}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--p)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ANNOTATIONS */
+.annsec{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.ann{padding:7px 10px;background:var(--bg);border-radius:6px;margin-bottom:5px;font-size:12px}
+.annh{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.annby{font-weight:700;font-size:11px;color:var(--muted)}
+.anntxt{color:var(--txt);word-break:break-word}
+
+/* COLLAPSE */
+.cbtn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:6px 0;display:inline-flex;align-items:center;gap:4px}
+.cbtn:hover{color:var(--p)}
+.clps{display:none}
+
+/* PLANNING */
+.pwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ptbl{border-collapse:collapse;font-size:11px}
+.ptbl th{background:var(--pd);color:white;padding:5px 3px;text-align:center;border:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.ptbl th.mhdr{background:var(--p);font-size:10px}
+.ptbl td{padding:3px;border:1px solid var(--border);text-align:center}
+.ptbl td.cname{text-align:left;padding:5px 10px;font-weight:600;background:white;white-space:nowrap;position:sticky;left:0;z-index:5;border-right:2px solid var(--border);font-size:12px}
+.ptbl td.vacw{background:#EDF2F7}
+.ptbl td.curw{background:#FFF9C4}
+.chk{width:22px;height:22px;border-radius:4px;cursor:pointer;margin:0 auto;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--border);font-size:10px;transition:.1s}
+.chk.on{background:var(--p);border-color:var(--p);color:white}
+.chk.vac{background:#A0AEC0;border-color:#A0AEC0;cursor:default;color:white}
+.chk.readonly{cursor:default}
+
+/* COMPANY CARDS */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.ccard{background:white;border-radius:var(--r);padding:18px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.cchdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.cav{width:42px;height:42px;border-radius:50%;background:var(--pl);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--p);flex-shrink:0}
+.cname h3{font-size:14px;font-weight:700;color:var(--pd)}
+.cname span{font-size:11px;color:var(--muted)}
+.cr{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-bottom:5px;word-break:break-all}
+.cr a{color:var(--p);text-decoration:none}
+.cr a:hover{text-decoration:underline}
+
+/* MODAL */
+.mover{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.mover.on{display:flex}
+.modal{background:white;border-radius:12px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:17px;color:var(--pd);margin-bottom:20px;font-weight:700}
+.mftr{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* LEGEND */
+.leg{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;font-size:11px;color:var(--muted)}
+.legitem{display:flex;align-items:center;gap:5px}
+.legdot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+
+/* DOCUMENT CARDS */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.doc-card{background:white;border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column}
+.doc-thumb{height:130px;background:var(--pl);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.doc-thumb img{width:100%;height:100%;object-fit:cover}
+.doc-thumb .doc-icon{font-size:48px;opacity:.7}
+.doc-info{padding:12px;flex:1;display:flex;flex-direction:column;gap:6px}
+.doc-info strong{font-size:13px;color:var(--pd);word-break:break-word}
+.doc-info small{font-size:11px;color:var(--muted)}
+.doc-acts{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--border)}
+.doc-acts a,.doc-acts button{flex:1;padding:6px;text-align:center;border-radius:6px;font-size:12px;font-weight:700;border:none;cursor:pointer;text-decoration:none}
+.doc-acts a{background:var(--pl);color:var(--pd)}
+.doc-acts .del-doc{background:#FFF5F5;color:#C53030}
+.doc-empty{text-align:center;color:var(--muted);padding:40px;font-size:13px}
+
+/* PRINT */
+@media print{
+  #login,header,nav,.tact,.addbtn,.cbtn{display:none!important}
+  .tab{display:block!important}
+  .card{break-inside:avoid;box-shadow:none;border:1px solid #ccc;margin-bottom:10px}
+  body{background:white;font-size:12px}
+  main{padding:0;max-width:100%}
+  .clps{display:block!important}
+  #tab-planning,#tab-directory,#tab-settings,#tab-documents{display:none!important}
+}
+@media(max-width:640px){main{padding:12px}.frow{grid-template-columns:1fr}}
+
+.hidden{display:none!important}
+.mt12{margin-top:12px}
+.sep{border-top:1px solid var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lbox">
+    <div id="logo-zone" onclick="triggerLogoUpload()" title="Cliquer pour ajouter un logo">
+      <span id="logo-placeholder">+ Logo</span>
+    </div>
+    <h1 id="lp-name">Compte Rendu de Chantier</h1>
+    <p id="lp-info">Saisissez votre code d'accès</p>
+    <input type="password" id="acode" placeholder="CODE D'ACCÈS" autocomplete="off"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lbtn" onclick="doLogin()">Accéder →</button>
+    <div id="lerr">Code incorrect — vérifiez votre code</div>
+  </div>
+</div>
+
+<!-- HIDDEN LOGO INPUT -->
+<input type="file" id="logo-input" accept="image/*" style="display:none" onchange="handleLogo(event)">
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div id="hlogo" onclick="triggerLogoUpload()" title="Modifier le logo"><span id="hlogo-txt">Logo</span></div>
+    <h1 id="htitle">Compte Rendu de Chantier</h1>
+    <button id="refresh-btn" onclick="refresh()" title="Recharger les données depuis le cloud" style="display:none;background:rgba(255,255,255,.15);border:none;color:white;cursor:pointer;padding:4px 10px;border-radius:6px;font-size:12px">🔄 Actualiser</button>
+    <span id="ubadge"></span>
+    <button id="logoutbtn" onclick="logout()">Déconnexion</button>
+  </header>
+
+  <nav>
+    <button class="on" onclick="tab('dashboard',this)">Tableau de bord</button>
+    <button onclick="tab('planning',this)">Planning</button>
+    <button onclick="tab('report',this)">Compte Rendu</button>
+    <button onclick="tab('directory',this)">Répertoire</button>
+    <button onclick="tab('documents',this)">📁 Documents</button>
+    <button id="nav-settings" class="hidden" onclick="tab('settings',this)">Paramètres</button>
+    <button id="nav-share" class="hidden" onclick="exportSharable()" style="margin-left:auto;background:var(--p);color:white;border-radius:6px;padding:6px 14px;font-weight:700;border:none;cursor:pointer;font-size:12px" title="Génère un fichier HTML autonome à envoyer par email ou à héberger">📤 Partager</button>
+  </nav>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab on">
+      <div class="sgrid" id="stats"></div>
+
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🔴 Points urgents</span>
+          <button class="addbtn aa-only hidden" onclick="openTask('urgent')">+ Ajouter</button>
+        </div>
+        <div id="tl-urgent"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🔵 À faire</span>
+          <button class="addbtn aa-only hidden" onclick="openTask('a-faire')">+ Ajouter</button>
+        </div>
+        <div id="tl-afaire"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch">
+          <span class="ct">🟡 En attente / Suivi</span>
+          <button class="addbtn aa-only hidden" onclick="openTask('attendu')">+ Ajouter</button>
+        </div>
+        <div id="tl-attendu"></div>
+      </div>
+
+      <div class="card">
+        <div class="ch">
+          <span class="ct">✅ Éléments traités</span>
+          <button class="cbtn" onclick="toggleC('tl-done',this)">▼ Afficher</button>
+        </div>
+        <div id="tl-done" class="clps"></div>
+      </div>
+    </div>
+
+    <!-- PLANNING -->
+    <div id="tab-planning" class="tab">
+      <div class="card">
+        <div class="ch">
+          <span class="ct">Planning hebdomadaire</span>
+          <div class="row">
+            <label class="a-only hidden" style="font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px">
+              <input type="checkbox" id="vac-mode" onchange="vacMode=this.checked"> Marquer congés
+            </label>
+            <button class="btn bto a-only hidden" onclick="clearMyInterventions()" title="Effacer mes coches">Réinitialiser</button>
+          </div>
+        </div>
+        <div class="leg">
+          <span class="legitem"><span class="legdot" style="background:var(--ph1)"></span>Phase 1 — RDC</span>
+          <span class="legitem"><span class="legdot" style="background:var(--ph2)"></span>Phase 2 — Chambre &amp; SdB</span>
+          <span class="legitem"><span class="legdot" style="background:#A0AEC0"></span>Congés</span>
+          <span class="legitem"><span class="legdot" style="background:#FFF9C4;border:1px solid #D4A017"></span>Semaine en cours</span>
+        </div>
+        <div class="pwrap" id="plan-wrap"></div>
+      </div>
+    </div>
+
+    <!-- COMPTE RENDU -->
+    <div id="tab-report" class="tab">
+      <div class="card">
+        <div class="ch">
+          <div>
+            <div class="ct" id="cr-title">Compte Rendu N°01</div>
+            <div style="font-size:12px;color:var(--muted)" id="cr-sub"></div>
+          </div>
+          <div class="row">
+            <button class="btn bto aa-only hidden" onclick="window.print()">🖨️ Imprimer</button>
+            <button class="btn bto aa-only hidden" onclick="exportJSON()">📤 Exporter</button>
+            <button class="addbtn a-only hidden" onclick="newReport()">Nouveau CR</button>
+          </div>
+        </div>
+        <div id="cr-body"></div>
+      </div>
+    </div>
+
+    <!-- RÉPERTOIRE -->
+    <div id="tab-directory" class="tab">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <h2 style="color:var(--pd);font-size:16px;font-weight:700">Répertoire des intervenants</h2>
+        <button class="addbtn a-only hidden" onclick="openCo()">+ Ajouter une entreprise</button>
+      </div>
+      <div class="cgrid" id="co-grid"></div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div id="tab-documents" class="tab">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <h2 style="color:var(--pd);font-size:16px;font-weight:700">📁 Plans, photos &amp; documents</h2>
+        <div class="row">
+          <select id="doc-filter" onchange="renderDocs()" style="padding:7px 12px;border:2px solid var(--border);border-radius:var(--r);font-size:12px;color:var(--txt)">
+            <option value="">Toutes les phases</option>
+            <option value="rdc">Phase 1 — Rez-de-chaussée</option>
+            <option value="parentale">Phase 2 — Chambre &amp; SdB</option>
+            <option value="general">Général</option>
+          </select>
+          <button class="addbtn aa-only hidden" onclick="openUpload()">+ Ajouter un document</button>
+        </div>
+      </div>
+      <div id="docs-grid"></div>
+    </div>
+
+    <!-- PARAMÈTRES -->
+    <div id="tab-settings" class="tab">
+      <div class="card">
+        <div class="ct" style="margin-bottom:16px">Informations du projet</div>
+        <div class="frow">
+          <div class="fg"><label>Nom du projet</label><input id="s-pname" type="text" placeholder="ex. Rénovation Villa Martin"></div>
+          <div class="fg"><label>Adresse du chantier</label><input id="s-paddr" type="text" placeholder="1 rue exemple, 75000 Paris"></div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label>Fréquence des comptes rendus</label>
+            <select id="s-freq">
+              <option value="weekly">Hebdomadaire (chaque lundi)</option>
+              <option value="biweekly">Bi-mensuel (tous les 15 jours)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Couleur principale</label>
+            <input type="color" id="s-color" value="#2B6CB0" oninput="applyColor(this.value)">
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label>Code Admin</label><input id="s-acode" type="text" placeholder="ADMIN2026"></div>
+          <div class="fg"><label>Code Assistante</label><input id="s-asscode" type="text" placeholder="ASSIST2026"></div>
+        </div>
+        <button class="addbtn" onclick="saveSettings()">💾 Sauvegarder</button>
+      </div>
+
+      <div class="card mt12">
+        <div class="ct" style="margin-bottom:14px">Codes d'accès entreprises</div>
+        <div id="codes-list"></div>
+      </div>
+
+      <div class="card mt12">
+        <div class="ct" style="margin-bottom:14px">Import / Export des données</div>
+        <div class="row">
+          <button class="btn bto" onclick="exportJSON()">📤 Exporter (JSON)</button>
+          <button class="btn bto" onclick="document.getElementById('imp').click()">📥 Importer (JSON)</button>
+          <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px">L'export crée une sauvegarde complète. L'import remplace toutes les données existantes.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: TÂCHE -->
+<div class="mover" id="m-task" onclick="closeMif(event,'m-task')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 id="m-task-ttl">Nouvelle action</h2>
+    <input type="hidden" id="eid">
+    <div class="fg"><label>Description *</label><textarea id="tdesc" rows="3" placeholder="Décrire précisément l'action à réaliser..."></textarea></div>
+    <div class="frow">
+      <div class="fg"><label>Statut</label>
+        <select id="tstat">
+          <option value="urgent">🔴 Urgent</option>
+          <option value="a-faire">🔵 À faire</option>
+          <option value="attendu">🟡 En attente / Suivi</option>
+        </select>
+      </div>
+      <div class="fg"><label>Phase</label>
+        <select id="tphase">
+          <option value="rdc">Phase 1 — Rez-de-chaussée</option>
+          <option value="parentale">Phase 2 — Chambre &amp; SdB parentales</option>
+          <option value="general">Général (hors phase)</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>Assigné à</label><select id="tassign"></select></div>
+      <div class="fg"><label>Échéance</label><input type="date" id="tdue"></div>
+    </div>
+    <div class="fg"><label>Note complémentaire</label><input type="text" id="tnote" placeholder="Information supplémentaire (optionnel)"></div>
+    <div class="mftr">
+      <button class="btn bto" onclick="closeM('m-task')">Annuler</button>
+      <button class="addbtn" onclick="saveTask()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ENTREPRISE -->
+<div class="mover" id="m-co" onclick="closeMif(event,'m-co')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 id="m-co-ttl">Ajouter une entreprise</h2>
+    <input type="hidden" id="co-eid">
+    <div class="frow">
+      <div class="fg"><label>Nom / Raison sociale *</label><input type="text" id="co-name" placeholder="SARL Exemple"></div>
+      <div class="fg"><label>Corps de métier</label><input type="text" id="co-role" placeholder="ex. Maçonnerie"></div>
+    </div>
+    <div class="fg"><label>Adresse complète</label><input type="text" id="co-addr" placeholder="1 rue exemple, 75000 Paris"></div>
+    <div class="frow">
+      <div class="fg"><label>Email</label><input type="email" id="co-email" placeholder="contact@exemple.fr"></div>
+      <div class="fg"><label>Téléphone</label><input type="tel" id="co-tel" placeholder="06 00 00 00 00"></div>
+    </div>
+    <div class="fg"><label>Nom du contact</label><input type="text" id="co-contact" placeholder="Prénom Nom du responsable"></div>
+    <div class="fg"><label>Code d'accès *</label><input type="text" id="co-code" placeholder="ex. MACON2026" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="mftr">
+      <button class="btn bto" onclick="closeM('m-co')">Annuler</button>
+      <button class="addbtn" onclick="saveCo()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: UPLOAD DOCUMENT -->
+<div class="mover" id="m-upload" onclick="closeMif(event,'m-upload')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Ajouter un document</h2>
+    <div class="fg">
+      <label>Fichier * <span style="font-weight:400;color:var(--muted)">(PDF, image, plan — max 50 Mo)</span></label>
+      <input type="file" id="up-file" accept="image/*,.pdf,.dwg,.dxf,.doc,.docx,.xls,.xlsx" style="padding:8px">
+      <div id="up-preview" style="margin-top:10px;display:none;text-align:center">
+        <img id="up-img" style="max-height:160px;border-radius:6px;border:1px solid var(--border)">
+      </div>
+    </div>
+    <div class="fg"><label>Nom / Description</label><input type="text" id="up-name" placeholder="ex. Plan RDC — version 2"></div>
+    <div class="fg"><label>Phase associée</label>
+      <select id="up-phase">
+        <option value="general">Général</option>
+        <option value="rdc">Phase 1 — Rez-de-chaussée</option>
+        <option value="parentale">Phase 2 — Chambre &amp; SdB parentales</option>
+      </select>
+    </div>
+    <div id="up-progress" style="display:none;margin-bottom:12px">
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+        <div id="up-bar" style="background:var(--p);height:6px;width:0%;transition:width .3s"></div>
+      </div>
+      <div id="up-status" style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center">Téléversement en cours...</div>
+    </div>
+    <div class="mftr">
+      <button class="btn bto" onclick="closeM('m-upload')">Annuler</button>
+      <button class="addbtn" id="up-btn" onclick="doUpload()">📤 Téléverser</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ANNOTATION -->
+<div class="mover" id="m-ann" onclick="closeMif(event,'m-ann')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Ajouter une annotation</h2>
+    <input type="hidden" id="ann-tid">
+    <div class="fg"><label>Votre commentaire *</label><textarea id="ann-txt" rows="4" placeholder="Saisissez votre annotation, question ou information..."></textarea></div>
+    <div class="fg"><label>Type d'annotation</label>
+      <select id="ann-stat">
+        <option value="urgent">🔴 Urgent — action requise</option>
+        <option value="a-faire">🔵 À faire de ma part</option>
+        <option value="attendu">🟡 Information / En attente</option>
+      </select>
+    </div>
+    <div class="mftr">
+      <button class="btn bto" onclick="closeM('m-ann')">Annuler</button>
+      <button class="addbtn" onclick="saveAnn()">Envoyer l'annotation</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Capture du template avant tout rendu (pour l'export partageable)
+const _RAW_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+// ─── SUPABASE CONFIG ─────────────────────────────────────────
+// Collez vos valeurs depuis app.supabase.com → Project Settings → API
+const SB_URL = 'https://geryauasxhrbfqhbtqpu.supabase.co';   // ex: https://abcdefghij.supabase.co
+const SB_KEY = 'sb_publishable_KJjbe-Ri8hQPYUx90e2cQg_D-2QPeDW';   // ex: eyJhbGciOiJIUzI1NiIs...
+let sb = null;
+function initSB(){
+  if(SB_URL && SB_KEY && window.supabase){
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+  }
+}
+
+// ─── DATA MODEL ───────────────────────────────────────────────
+const SK = 'cr_chantier_v2';
+
+const DD = {
+  project:{ name:'Compte Rendu de Chantier', address:'', startDate:'2026-07-06', endDate:'2027-05-10', crNum:1, crDate:'2026-07-06', freq:'weekly', logo:null },
+  settings:{ adminCode:'ADMIN2026', assistCode:'ASSIST2026', color:'#2B6CB0' },
+  companies:[
+    {id:'mo',    name:"Maître d'Ouvrage",           role:'Client / Maître d\'ouvrage',      addr:'',email:'',tel:'',contact:'',code:'MO2026',    ini:'MO'},
+    {id:'macon', name:'Maçonnerie',                   role:'Gros œuvre',                      addr:'',email:'',tel:'',contact:'',code:'MACON2026', ini:'MA'},
+    {id:'platr', name:'Plâtrerie Isolation',           role:'Plâtrerie / Isolation',           addr:'',email:'',tel:'',contact:'',code:'PLATR2026', ini:'PI'},
+    {id:'sol',   name:'Revêtements de sol',            role:'Sols',                            addr:'',email:'',tel:'',contact:'',code:'SOL2026',   ini:'SO'},
+    {id:'plomb', name:'Plancher Chauffant / Plomberie',role:'Plomberie',                       addr:'',email:'',tel:'',contact:'',code:'PLOMB2026', ini:'PC'},
+    {id:'elec',  name:'Électricité',                   role:'Électricité',                     addr:'',email:'',tel:'',contact:'',code:'ELEC2026',  ini:'EL'},
+    {id:'cuis',  name:'Cuisine',                       role:'Cuisiniste',                      addr:'',email:'',tel:'',contact:'',code:'CUIS2026',  ini:'CU'},
+    {id:'tapis', name:'Tapisserie',                    role:'Peinture / Revêtements muraux',   addr:'',email:'',tel:'',contact:'',code:'TAPIS2026', ini:'TA'},
+    {id:'menint',name:'Menuiseries Intérieures',       role:'Menuiserie intérieure',           addr:'',email:'',tel:'',contact:'',code:'MENINT2026',ini:'MI'},
+    {id:'ext',   name:'Extérieurs',                    role:'Menuiserie ext. / VRD',           addr:'',email:'',tel:'',contact:'',code:'EXT2026',   ini:'ME'}
+  ],
+  tasks:[], annotations:[],
+  planning:{ inter:{}, vacs:[] }
+};
+
+// Standard French construction vacations (week indices from 2026-07-06)
+// Week 0 = July 6, week 4 = Aug 3, week 5 = Aug 10, week 6 = Aug 17, week 7 = Aug 24
+// Noël: week 24 (Dec 21), week 25 (Dec 28)
+// Hiver: week 32 (Feb 15), week 33 (Feb 22)
+DD.planning.vacs = [4,5,6,7,24,25];
+
+// ─── STATE ────────────────────────────────────────────────────
+let D = {}, me = null, vacMode = false;
+
+function save(){
+  // Sauvegarde locale (fallback)
+  try{ localStorage.setItem(SK, JSON.stringify(D)); } catch(e){}
+  // Sauvegarde Supabase (cloud — partagée entre tous les utilisateurs)
+  if(sb){
+    sb.from('project_state').upsert({id:1, data:D})
+      .then(({error})=>{ if(error) toast('⚠️ Sync cloud : '+error.message,'#C05621'); });
+  }
+  return true;
+}
+
+async function load(){
+  if(typeof __EMBEDDED__ !== 'undefined'){
+    D = JSON.parse(JSON.stringify(__EMBEDDED__)); mergeD(); return;
+  }
+  if(sb){
+    try{
+      const {data,error} = await sb.from('project_state').select('data').eq('id',1).maybeSingle();
+      if(data?.data){ D = data.data; mergeD(); return; }
+    } catch(e){}
+  }
+  try{ const s=localStorage.getItem(SK); D = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DD)); }
+  catch(e){ D = JSON.parse(JSON.stringify(DD)); }
+  mergeD();
+}
+
+function mergeD(){
+  if(!D.project)   D.project   = JSON.parse(JSON.stringify(DD.project));
+  if(!D.companies) D.companies = JSON.parse(JSON.stringify(DD.companies));
+  if(!D.tasks)     D.tasks     = [];
+  if(!D.settings)  D.settings  = JSON.parse(JSON.stringify(DD.settings));
+  if(!D.planning)  D.planning  = {inter:{}, vacs: JSON.parse(JSON.stringify(DD.planning.vacs))};
+  if(!D.planning.vacs)  D.planning.vacs  = JSON.parse(JSON.stringify(DD.planning.vacs));
+  if(!D.planning.inter) D.planning.inter = {};
+  if(!D.annotations) D.annotations = [];
+  if(!D.documents)   D.documents   = [];
+}
+
+async function refresh(){
+  if(!sb){ toast('Supabase non configuré','#C05621'); return; }
+  const {data} = await sb.from('project_state').select('data').eq('id',1).maybeSingle();
+  if(data?.data){ D=data.data; mergeD(); renderAll(); toast('🔄 Données actualisées'); }
+}
+function toast(msg, color){
+  color=color||'#276749';
+  const t=document.createElement('div');
+  t.textContent=msg;
+  Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',background:color,color:'white',
+    padding:'12px 20px',borderRadius:'8px',fontWeight:'700',fontSize:'13px',zIndex:'9999',
+    boxShadow:'0 4px 16px rgba(0,0,0,.25)',transition:'opacity .4s',opacity:'1'});
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),400); },2800);
+}
+
+// ─── AUTH ────────────────────────────────────────────────────
+function doLogin(){
+  const code = document.getElementById('acode').value.trim().toUpperCase();
+  const err = document.getElementById('lerr');
+  if(code === D.settings.adminCode.toUpperCase()){
+    me = {role:'admin', cid:null};
+  } else if(code === D.settings.assistCode.toUpperCase()){
+    me = {role:'assist', cid:null};
+  } else {
+    const co = D.companies.find(c=>c.code.toUpperCase()===code);
+    if(co){ me = {role:'co', cid:co.id}; }
+    else { err.style.display='block'; return; }
+  }
+  err.style.display='none';
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('htitle').textContent = D.project.name;
+  const b = document.getElementById('ubadge');
+  if(me.role==='admin') b.textContent='👑 Administrateur';
+  else if(me.role==='assist') b.textContent='📝 Assistante';
+  else { const c=D.companies.find(x=>x.id===me.cid); b.textContent='🏗 '+(c?c.name:'Intervenant'); }
+
+  if(me.role==='admin'){
+    document.getElementById('nav-settings').classList.remove('hidden');
+    document.getElementById('nav-share').classList.remove('hidden');
+  }
+  if(me.role==='admin'||me.role==='assist'){
+    document.querySelectorAll('.aa-only').forEach(el=>el.classList.remove('hidden'));
+  }
+  if(me.role==='admin'){
+    document.querySelectorAll('.a-only').forEach(el=>el.classList.remove('hidden'));
+  }
+  if(D.settings.color) applyColor(D.settings.color);
+  if(D.project.logo) setLogo(D.project.logo);
+  renderAll();
+}
+
+function logout(){
+  me=null; vacMode=false;
+  document.getElementById('login').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('acode').value='';
+  document.querySelectorAll('.aa-only,.a-only').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('nav-settings').classList.add('hidden');
+}
+
+function isAdmin(){ return me&&me.role==='admin'; }
+function isAA(){ return me&&(me.role==='admin'||me.role==='assist'); }
+
+// ─── TABS ────────────────────────────────────────────────────
+function tab(name, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tab-'+name).classList.add('on');
+  btn.classList.add('on');
+  if(name==='planning') renderPlanning();
+  if(name==='settings'&&isAdmin()) renderSettings();
+}
+
+// ─── RENDER ──────────────────────────────────────────────────
+function renderAll(){ renderDash(); renderReport(); renderDir(); renderDocs(); if(isAdmin()) renderSettings(); }
+
+function renderDash(){
+  const tasks=D.tasks, u=tasks.filter(t=>t.s==='urgent').length,
+    a=tasks.filter(t=>t.s==='a-faire').length,
+    w=tasks.filter(t=>t.s==='attendu').length,
+    d=tasks.filter(t=>t.s==='fait').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="scard u"><div class="snum">${u}</div><div class="slbl">Urgent</div></div>
+    <div class="scard"><div class="snum">${a}</div><div class="slbl">À faire</div></div>
+    <div class="scard"><div class="snum">${w}</div><div class="slbl">En attente</div></div>
+    <div class="scard d"><div class="snum">${d}</div><div class="slbl">Traités</div></div>
+    <div class="scard"><div class="snum">${tasks.length}</div><div class="slbl">Total</div></div>`;
+  renderTL('tl-urgent','urgent');
+  renderTL('tl-afaire','a-faire');
+  renderTL('tl-attendu','attendu');
+  renderTL('tl-done','fait');
+}
+
+function renderTL(cid, status){
+  const el=document.getElementById(cid);
+  let tasks=D.tasks.filter(t=>t.s===status);
+  if(me.role==='co') tasks=tasks.filter(t=>!t.ass||t.ass===me.cid||t.ass==='all');
+  if(!tasks.length){ el.innerHTML='<p style="color:var(--muted);font-size:13px;padding:4px 0">Aucun élément</p>'; return; }
+  el.innerHTML=tasks.map(t=>taskHTML(t)).join('');
+}
+
+function taskHTML(t){
+  const co=t.ass?D.companies.find(c=>c.id===t.ass):null;
+  const anns=D.annotations.filter(a=>a.tid===t.id);
+  const ph=t.ph==='rdc'?'<span class="pb ph1">Phase 1 — RDC</span>':t.ph==='parentale'?'<span class="pb ph2">Phase 2 — Parentale</span>':'';
+  const annHtml=anns.length?`<div class="annsec">${anns.map(a=>{
+    const ac=D.companies.find(c=>c.id===a.cid)||{name:a.cid==='admin'?'Direction':a.cid};
+    return `<div class="ann"><div class="annh"><span class="annby">${esc(ac.name)} <span class="sb ${a.s}">${slbl(a.s)}</span></span><span style="font-size:10px;color:var(--muted)">${fd(a.dt)}</span></div><div class="anntxt">${esc(a.txt)}</div></div>`;
+  }).join('')}</div>`:'';
+  const editBtn=isAA()?`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openEditTask('${t.id}')">✏️</button>`:'';
+  const doneBtn=isAA()&&t.s!=='fait'?`<button class="btn btg" style="padding:3px 9px;font-size:11px" onclick="markDone('${t.id}')">✓ Traité</button>`:'';
+  const annBtn=`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openAnn('${t.id}')" title="Annotation">💬${anns.length?' '+anns.length:''}</button>`;
+  return `<div class="ti ${t.s}" id="ti-${t.id}">
+    <div class="tb">
+      <div class="ttl">${esc(t.title)}</div>
+      <div class="tmeta">
+        ${co?`<span>👷 ${esc(co.name)}</span>`:''}
+        ${t.due?`<span>📅 ${fd(t.due)}</span>`:''}
+        ${ph}
+        ${t.note?`<span style="font-style:italic">${esc(t.note)}</span>`:''}
+      </div>
+      ${annHtml}
+    </div>
+    <div class="tact">${editBtn}${doneBtn}${annBtn}</div>
+  </div>`;
+}
+
+// ─── PLANNING ────────────────────────────────────────────────
+function renderPlanning(){
+  const wrap=document.getElementById('plan-wrap');
+  const sd=new Date('2026-07-06'), ed=new Date('2027-05-10');
+  const weeks=[]; let d=new Date(sd);
+  while(d<=ed){ weeks.push(new Date(d)); d.setDate(d.getDate()+7); }
+
+  // Month headers
+  const months=[]; let lm=-1;
+  weeks.forEach((w,i)=>{
+    const m=w.getMonth();
+    if(m!==lm){ months.push({lbl:w.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}),start:i,span:0}); lm=m; }
+    months[months.length-1].span++;
+  });
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const vacs=D.planning.vacs||[];
+  const inter=D.planning.inter||{};
+
+  let html=`<table class="ptbl"><thead>
+    <tr><th style="min-width:155px;text-align:left;padding-left:10px;position:sticky;left:0;background:var(--pd)">Entreprise</th>
+    ${months.map(m=>`<th class="mhdr" colspan="${m.span}">${m.lbl}</th>`).join('')}</tr>
+    <tr><th style="position:sticky;left:0;background:var(--pd)"></th>
+    ${weeks.map((w,i)=>{
+      const dd=('0'+w.getDate()).slice(-2)+'/'+('0'+(w.getMonth()+1)).slice(-2);
+      return `<th style="min-width:26px;font-size:9px" title="Sem.${i+1} — ${w.toLocaleDateString('fr-FR')}">${dd}</th>`;
+    }).join('')}</tr></thead><tbody>`;
+
+  D.companies.forEach(co=>{
+    const myInter=inter[co.id]||[];
+    html+=`<tr><td class="cname">${esc(co.name)}</td>`;
+    weeks.forEach((w,i)=>{
+      const isVac=vacs.includes(i);
+      const wstart=new Date(w); const wend=new Date(w); wend.setDate(wend.getDate()+6);
+      const isCur=today>=wstart&&today<=wend;
+      const isOn=myInter.includes(i);
+      let tdCls=isCur?'curw':''; tdCls+=isVac?' vacw':'';
+
+      const canEdit=(isAdmin()&&vacMode)||(isAdmin()&&!vacMode)||(me.role==='co'&&me.cid===co.id);
+
+      if(isVac&&!vacMode){
+        html+=`<td class="${tdCls}"><div class="chk vac" title="Congés">—</div></td>`;
+      } else {
+        const chkCls=isOn?'on':isVac?'vac':'';
+        const ocFn=canEdit?`onclick="toggleCell('${co.id}',${i})"`:' readonly';
+        const cur=canEdit?'style="cursor:pointer"':'style="cursor:default"';
+        html+=`<td class="${tdCls}"><div class="chk ${chkCls}" ${ocFn} ${cur} title="Sem.${i+1}">${isOn?'✓':isVac?'—':''}</div></td>`;
+      }
+    });
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+function toggleCell(cid, wi){
+  if(isAdmin()&&vacMode){
+    const v=D.planning.vacs; const idx=v.indexOf(wi);
+    if(idx>-1) v.splice(idx,1); else v.push(wi);
+    save(); renderPlanning(); return;
+  }
+  if(!D.planning.inter[cid]) D.planning.inter[cid]=[];
+  const arr=D.planning.inter[cid]; const idx=arr.indexOf(wi);
+  if(idx>-1) arr.splice(idx,1); else arr.push(wi);
+  save(); renderPlanning();
+}
+
+// ─── COMPTE RENDU ────────────────────────────────────────────
+function renderReport(){
+  const n=String(D.project.crNum||1).padStart(2,'0');
+  document.getElementById('cr-title').textContent=`Compte Rendu N°${n}`;
+  const today=new Date();
+  document.getElementById('cr-sub').textContent=
+    `Émis le ${today.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}${D.project.address?' — '+D.project.address:''}`;
+
+  const phases=[
+    {id:'rdc',name:'Phase 1 — Rez-de-chaussée'},
+    {id:'parentale',name:'Phase 2 — Chambre &amp; Salle de bain parentales'},
+    {id:'general',name:'Général'}
+  ];
+  const sts=[
+    {id:'urgent',lbl:'🔴 Points urgents'},
+    {id:'a-faire',lbl:'🔵 À faire'},
+    {id:'attendu',lbl:'🟡 En attente / Suivi'}
+  ];
+
+  let html='';
+  phases.forEach(ph=>{
+    let tasks=D.tasks.filter(t=>t.ph===ph.id&&t.s!=='fait');
+    if(me.role==='co') tasks=tasks.filter(t=>!t.ass||t.ass===me.cid);
+    if(!tasks.length) return;
+    html+=`<div style="margin-bottom:18px"><h3 style="color:var(--pd);font-size:13px;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid var(--border)">${ph.name}</h3>`;
+    sts.forEach(st=>{
+      const ts=tasks.filter(t=>t.s===st.id); if(!ts.length) return;
+      html+=`<div style="margin-bottom:10px"><div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${st.lbl}</div>`;
+      ts.forEach(t=>{
+        const co=t.ass?D.companies.find(c=>c.id===t.ass):null;
+        html+=`<div class="ti ${t.s}" style="margin-bottom:6px"><div class="tb"><div class="ttl">${esc(t.title)}</div>
+          <div class="tmeta">${co?`<span>👷 ${esc(co.name)}</span>`:'<span>Non assigné</span>'}${t.due?`<span>📅 ${fd(t.due)}</span>`:''}</div>
+          ${t.note?`<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic">${esc(t.note)}</div>`:''}
+        </div></div>`;
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  });
+  if(!html) html='<div style="text-align:center;padding:32px;color:var(--muted)">Aucune action en cours ✅</div>';
+
+  const done=D.tasks.filter(t=>t.s==='fait');
+  html+=`<div class="sep"></div>
+    <button class="cbtn" onclick="toggleC('cr-done',this)">▼ Éléments traités (${done.length})</button>
+    <div id="cr-done" class="clps">${done.map(t=>{
+      const co=t.ass?D.companies.find(c=>c.id===t.ass):null;
+      return `<div class="ti fait" style="margin-bottom:6px"><div class="tb">
+        <div class="ttl" style="text-decoration:line-through">${esc(t.title)}</div>
+        <div class="tmeta">${co?`<span>👷 ${esc(co.name)}</span>`:''}${t.done?`<span>✅ Traité le ${fd(t.done)}</span>`:''}</div>
+      </div></div>`;
+    }).join('')}</div>`;
+
+  document.getElementById('cr-body').innerHTML=html;
+}
+
+function newReport(){
+  if(!confirm('Incrémenter le numéro de compte rendu ?')) return;
+  D.project.crNum=(D.project.crNum||1)+1;
+  D.project.crDate=new Date().toISOString().split('T')[0];
+  save(); renderReport();
+}
+
+// ─── DIRECTORY ───────────────────────────────────────────────
+function renderDir(){
+  let cos=D.companies;
+  if(me.role==='co') cos=cos.filter(c=>c.id===me.cid||c.id==='mo');
+  document.getElementById('co-grid').innerHTML=cos.map(co=>`
+    <div class="ccard">
+      <div class="cchdr">
+        <div class="cav">${esc(co.ini||co.name.substring(0,2).toUpperCase())}</div>
+        <div class="cname"><h3>${esc(co.name)}</h3><span>${esc(co.role||'')}</span></div>
+      </div>
+      ${co.contact?`<div class="cr">👤 ${esc(co.contact)}</div>`:''}
+      <div class="cr">${co.addr?`📍 ${esc(co.addr)}`:'<span style="opacity:.5">📍 Adresse non renseignée</span>'}</div>
+      <div class="cr">${co.email?`✉️ <a href="mailto:${esc(co.email)}">${esc(co.email)}</a>`:'<span style="opacity:.5">✉️ Email non renseigné</span>'}</div>
+      <div class="cr">${co.tel?`📞 <a href="tel:${co.tel}">${esc(co.tel)}</a>`:'<span style="opacity:.5">📞 Tél. non renseigné</span>'}</div>
+      ${isAdmin()?`<div class="sep" style="margin:10px 0"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn bto" style="font-size:11px;padding:4px 10px" onclick="openEditCo('${co.id}')">✏️ Modifier</button>
+          <span style="margin-left:auto;font-size:10px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">Code : ${co.code}</span>
+        </div>`:''}
+    </div>`).join('');
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────
+function renderSettings(){
+  document.getElementById('s-pname').value=D.project.name||'';
+  document.getElementById('s-paddr').value=D.project.address||'';
+  document.getElementById('s-freq').value=D.project.freq||'weekly';
+  document.getElementById('s-color').value=D.settings.color||'#2B6CB0';
+  document.getElementById('s-acode').value=D.settings.adminCode||'';
+  document.getElementById('s-asscode').value=D.settings.assistCode||'';
+  document.getElementById('codes-list').innerHTML=D.companies.map(c=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--r);margin-bottom:6px;font-size:12px">
+      <span><strong>${esc(c.ini)}</strong> — ${esc(c.name)}</span>
+      <code style="background:white;padding:2px 8px;border-radius:4px;border:1px solid var(--border)">${c.code}</code>
+    </div>`).join('');
+}
+
+function saveSettings(){
+  D.project.name=document.getElementById('s-pname').value.trim()||D.project.name;
+  D.project.address=document.getElementById('s-paddr').value.trim();
+  D.project.freq=document.getElementById('s-freq').value;
+  const nc=document.getElementById('s-acode').value.trim(); if(nc) D.settings.adminCode=nc;
+  const nas=document.getElementById('s-asscode').value.trim(); if(nas) D.settings.assistCode=nas;
+  D.settings.color=document.getElementById('s-color').value;
+  applyColor(D.settings.color);
+  document.getElementById('htitle').textContent=D.project.name;
+  if(save()) toast('✅ Paramètres sauvegardés');
+}
+
+// ─── TASKS ───────────────────────────────────────────────────
+function openTask(defStat){
+  document.getElementById('m-task-ttl').textContent='Nouvelle action';
+  document.getElementById('eid').value='';
+  document.getElementById('tdesc').value='';
+  document.getElementById('tstat').value=defStat||'a-faire';
+  document.getElementById('tphase').value='rdc';
+  document.getElementById('tdue').value='';
+  document.getElementById('tnote').value='';
+  fillAssign('');
+  openM('m-task');
+}
+
+function openEditTask(id){
+  const t=D.tasks.find(x=>x.id===id); if(!t) return;
+  document.getElementById('m-task-ttl').textContent='Modifier l\'action';
+  document.getElementById('eid').value=id;
+  document.getElementById('tdesc').value=t.title;
+  document.getElementById('tstat').value=t.s;
+  document.getElementById('tphase').value=t.ph||'general';
+  document.getElementById('tdue').value=t.due||'';
+  document.getElementById('tnote').value=t.note||'';
+  fillAssign(t.ass||'');
+  openM('m-task');
+}
+
+function fillAssign(sel){
+  document.getElementById('tassign').innerHTML=`<option value="">Non assigné</option>`+
+    D.companies.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${esc(c.name)}</option>`).join('');
+}
+
+function saveTask(){
+  const title=document.getElementById('tdesc').value.trim();
+  if(!title){ alert('La description est requise.'); return; }
+  const eid=document.getElementById('eid').value;
+  const data={title,s:document.getElementById('tstat').value,ph:document.getElementById('tphase').value,
+    ass:document.getElementById('tassign').value,due:document.getElementById('tdue').value,
+    note:document.getElementById('tnote').value.trim()};
+  if(eid){ const t=D.tasks.find(x=>x.id===eid); if(t) Object.assign(t,data); }
+  else { D.tasks.push({id:'t'+Date.now(),...data,dt:new Date().toISOString().split('T')[0]}); }
+  if(save()){ toast('✅ Action enregistrée'); closeM('m-task'); renderAll(); }
+}
+
+function markDone(id){
+  const t=D.tasks.find(x=>x.id===id); if(!t) return;
+  t.s='fait'; t.done=new Date().toISOString().split('T')[0];
+  save(); renderAll();
+}
+
+// ─── COMPANIES ───────────────────────────────────────────────
+function openCo(){ fillCoModal(null); openM('m-co'); }
+function openEditCo(id){ fillCoModal(D.companies.find(c=>c.id===id)); openM('m-co'); }
+
+function fillCoModal(co){
+  document.getElementById('m-co-ttl').textContent=co?'Modifier l\'entreprise':'Ajouter une entreprise';
+  document.getElementById('co-eid').value=co?co.id:'';
+  document.getElementById('co-name').value=co?co.name:'';
+  document.getElementById('co-role').value=co?co.role||'':'';
+  document.getElementById('co-addr').value=co?co.addr||'':'';
+  document.getElementById('co-email').value=co?co.email||'':'';
+  document.getElementById('co-tel').value=co?co.tel||'':'';
+  document.getElementById('co-contact').value=co?co.contact||'':'';
+  document.getElementById('co-code').value=co?co.code:'';
+}
+
+function saveCo(){
+  const name=document.getElementById('co-name').value.trim();
+  const code=document.getElementById('co-code').value.trim().toUpperCase();
+  if(!name||!code){ alert('Nom et code requis.'); return; }
+  const data={name,role:document.getElementById('co-role').value.trim(),
+    addr:document.getElementById('co-addr').value.trim(),
+    email:document.getElementById('co-email').value.trim(),
+    tel:document.getElementById('co-tel').value.trim(),
+    contact:document.getElementById('co-contact').value.trim(),
+    code,ini:name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase()||name.substring(0,2).toUpperCase()};
+  const eid=document.getElementById('co-eid').value;
+  if(eid){ const co=D.companies.find(c=>c.id===eid); if(co) Object.assign(co,data); }
+  else D.companies.push({id:'co'+Date.now(),...data});
+  if(save()){ toast('✅ Entreprise enregistrée'); closeM('m-co'); renderAll(); }
+}
+
+// ─── ANNOTATIONS ─────────────────────────────────────────────
+function openAnn(tid){
+  document.getElementById('ann-tid').value=tid;
+  document.getElementById('ann-txt').value='';
+  document.getElementById('ann-stat').value='attendu';
+  openM('m-ann');
+}
+
+function saveAnn(){
+  const txt=document.getElementById('ann-txt').value.trim();
+  if(!txt){ alert('Le commentaire est requis.'); return; }
+  D.annotations.push({id:'a'+Date.now(),tid:document.getElementById('ann-tid').value,
+    cid:me.role==='co'?me.cid:'admin',txt,
+    s:document.getElementById('ann-stat').value,
+    dt:new Date().toISOString().split('T')[0]});
+  if(save()){ toast('✅ Annotation envoyée'); closeM('m-ann'); renderAll(); }
+}
+
+// ─── LOGO ────────────────────────────────────────────────────
+function triggerLogoUpload(){ if(!isAA()) return; document.getElementById('logo-input').click(); }
+function handleLogo(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ D.project.logo=ev.target.result; save(); setLogo(ev.target.result); };
+  r.readAsDataURL(f);
+}
+function setLogo(src){
+  ['logo-zone','hlogo'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.innerHTML=`<img src="${src}" alt="logo">`;
+  });
+}
+
+// ─── DOCUMENTS ───────────────────────────────────────────────
+function phaseLabel(v){ return {rdc:'Phase 1 — RDC',parentale:'Phase 2 — Parentale',general:'Général'}[v]||v; }
+function fileIcon(type){
+  if(!type) return '📄';
+  if(type.startsWith('image/')) return '🖼️';
+  if(type==='application/pdf') return '📕';
+  if(type.includes('word')) return '📝';
+  if(type.includes('excel')||type.includes('spreadsheet')) return '📊';
+  return '📄';
+}
+
+function openUpload(){
+  if(!sb){ toast('Supabase requis pour l\'upload de fichiers','#C05621'); return; }
+  document.getElementById('up-file').value='';
+  document.getElementById('up-name').value='';
+  document.getElementById('up-phase').value='general';
+  document.getElementById('up-preview').style.display='none';
+  document.getElementById('up-progress').style.display='none';
+  document.getElementById('up-bar').style.width='0%';
+  document.getElementById('up-btn').disabled=false;
+  // Preview image on file select
+  document.getElementById('up-file').onchange=function(){
+    const f=this.files[0]; if(!f) return;
+    if(!document.getElementById('up-name').value) document.getElementById('up-name').value=f.name.replace(/\.[^.]+$/,'');
+    if(f.type.startsWith('image/')){
+      const r=new FileReader();
+      r.onload=ev=>{ document.getElementById('up-img').src=ev.target.result; document.getElementById('up-preview').style.display='block'; };
+      r.readAsDataURL(f);
+    } else { document.getElementById('up-preview').style.display='none'; }
+  };
+  openM('m-upload');
+}
+
+async function doUpload(){
+  const fileEl=document.getElementById('up-file');
+  const f=fileEl.files[0];
+  if(!f){ toast('Choisissez un fichier','#C05621'); return; }
+  if(f.size>52428800){ toast('Fichier trop volumineux (max 50 Mo)','#C05621'); return; }
+  const name=document.getElementById('up-name').value.trim()||f.name;
+  const phase=document.getElementById('up-phase').value;
+  const btn=document.getElementById('up-btn');
+  btn.disabled=true;
+  document.getElementById('up-progress').style.display='block';
+  document.getElementById('up-status').textContent='Téléversement en cours...';
+  document.getElementById('up-bar').style.width='30%';
+  const ext=f.name.split('.').pop();
+  const path=`docs/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  try{
+    const {error:upErr}=await sb.storage.from('chantier-docs').upload(path,f,{contentType:f.type,upsert:false});
+    if(upErr) throw upErr;
+    document.getElementById('up-bar').style.width='70%';
+    const {data:urlData}=sb.storage.from('chantier-docs').getPublicUrl(path);
+    document.getElementById('up-bar').style.width='100%';
+    document.getElementById('up-status').textContent='Enregistrement...';
+    D.documents.push({id:'d'+Date.now(),name,phase,path,url:urlData.publicUrl,type:f.type,size:f.size,date:new Date().toISOString().split('T')[0]});
+    save();
+    renderDocs();
+    closeM('m-upload');
+    toast('✅ Document ajouté');
+  } catch(e){
+    toast('❌ Erreur upload : '+(e.message||e),'#C05621');
+    document.getElementById('up-status').textContent='Erreur.';
+  }
+  btn.disabled=false;
+}
+
+function renderDocs(){
+  const g=document.getElementById('docs-grid'); if(!g) return;
+  const filter=document.getElementById('doc-filter')?.value||'';
+  const docs=(D.documents||[]).filter(d=>!filter||d.phase===filter);
+  if(!docs.length){ g.innerHTML='<div class="doc-empty">Aucun document. Cliquez sur "+ Ajouter un document" pour commencer.</div>'; return; }
+  const canDel=isAdmin();
+  g.innerHTML='<div class="doc-grid">'+docs.map(d=>{
+    const isImg=d.type&&d.type.startsWith('image/');
+    const thumb=isImg
+      ?`<div class="doc-thumb"><img src="${esc(d.url)}" alt="${esc(d.name)}" loading="lazy"></div>`
+      :`<div class="doc-thumb"><span class="doc-icon">${fileIcon(d.type)}</span></div>`;
+    const size=d.size?(d.size>1048576?(d.size/1048576).toFixed(1)+' Mo':(d.size/1024).toFixed(0)+' Ko'):'';
+    return `<div class="doc-card">
+      ${thumb}
+      <div class="doc-info">
+        <strong>${esc(d.name)}</strong>
+        <small>${phaseLabel(d.phase)}${size?' · '+size:''}${d.date?' · '+fd(d.date):''}</small>
+      </div>
+      <div class="doc-acts">
+        <a href="${esc(d.url)}" target="_blank" rel="noopener">👁 Ouvrir</a>
+        ${canDel?`<button class="del-doc" onclick="deleteDoc('${esc(d.id)}')">🗑</button>`:''}
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+async function deleteDoc(id){
+  if(!confirm('Supprimer ce document ?')) return;
+  const doc=(D.documents||[]).find(d=>d.id===id);
+  if(!doc) return;
+  if(sb && doc.path){
+    const {error}=await sb.storage.from('chantier-docs').remove([doc.path]);
+    if(error) toast('⚠️ Erreur suppression storage : '+error.message,'#C05621');
+  }
+  D.documents=D.documents.filter(d=>d.id!==id);
+  save(); renderDocs(); toast('🗑 Document supprimé');
+}
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────
+function exportJSON(){
+  const j=JSON.stringify(D,null,2);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([j],{type:'application/json'}));
+  a.download=`chantier_${D.project.name.replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+}
+
+function exportSharable(){
+  // Injecte les données courantes dans le HTML template → fichier autonome sans localStorage
+  const stamp = new Date().toISOString().split('T')[0];
+  const safeJson = JSON.stringify(D).replace(/<\/script>/gi, '<\\/script>');
+  const dataScript = `\nconst __EMBEDDED__ = ${safeJson};\n`;
+  // Insère juste après la capture _RAW_HTML (premier bloc du <script>)
+  const out = _RAW_HTML.replace(
+    "const _RAW_HTML = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;",
+    "const _RAW_HTML = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;" + dataScript
+  );
+  const n = String(D.project.crNum||1).padStart(2,'0');
+  const fname = `CR_N${n}_${stamp}.html`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out],{type:'text/html;charset=utf-8'}));
+  a.download = fname;
+  a.click();
+  toast(`✅ Fichier "${fname}" prêt à envoyer`);
+}
+function importJSON(e){
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const imp=JSON.parse(ev.target.result);
+      if(confirm('Remplacer toutes les données actuelles par celles du fichier importé ?')){
+        D=imp; save(); renderAll(); if(isAdmin()) renderSettings();
+        alert('Données importées.');
+      }
+    }catch(err){ alert('Fichier invalide.'); }
+  };
+  r.readAsText(f);
+}
+
+// ─── MODAL HELPERS ───────────────────────────────────────────
+function openM(id){ document.getElementById(id).classList.add('on'); }
+function closeM(id){ document.getElementById(id).classList.remove('on'); }
+function closeMif(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.mover.on').forEach(m=>m.classList.remove('on')); });
+
+// ─── COLLAPSE ────────────────────────────────────────────────
+function toggleC(id, btn){
+  const el=document.getElementById(id); el.classList.toggle('clps');
+  if(btn) btn.textContent=btn.textContent.includes('▼')?btn.textContent.replace('▼','▲'):btn.textContent.replace('▲','▼');
+}
+
+// ─── COLOR ───────────────────────────────────────────────────
+function applyColor(hex){
+  const r=document.documentElement.style;
+  r.setProperty('--p',hex);
+  r.setProperty('--pd',shadeColor(hex,-30));
+  r.setProperty('--pl',hex+'44');
+  r.setProperty('--ph1',hex);
+}
+function shadeColor(c,p){
+  const n=parseInt(c.slice(1),16);
+  const R=Math.min(255,Math.max(0,(n>>16)+Math.round(p*2.55)));
+  const G=Math.min(255,Math.max(0,((n>>8)&0xFF)+Math.round(p*2.55)));
+  const B=Math.min(255,Math.max(0,(n&0xFF)+Math.round(p*2.55)));
+  return '#'+((1<<24)+(R<<16)+(G<<8)+B).toString(16).slice(1);
+}
+
+// ─── UTILS ───────────────────────────────────────────────────
+function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fd(d){ if(!d) return ''; try{ return new Date(d+'T00:00:00').toLocaleDateString('fr-FR'); } catch(e){ return d; } }
+function slbl(s){ return {urgent:'Urgent','a-faire':'À faire',attendu:'En attente',fait:'Traité'}[s]||s; }
+
+// ─── INIT ────────────────────────────────────────────────────
+(async()=>{
+  initSB();
+  await load();
+  document.getElementById('lp-name').textContent=D.project.name;
+  if(D.project.logo) setLogo(D.project.logo);
+
+  // Affiche le bouton refresh si Supabase est actif
+  if(sb) document.getElementById('refresh-btn').style.display='inline-block';
+
+  // Avertissement localStorage uniquement si pas de Supabase et pas de données intégrées
+  if(!sb && typeof __EMBEDDED__ === 'undefined') try{
+    localStorage.setItem('_test','1'); localStorage.removeItem('_test');
+  } catch(e){
+    setTimeout(()=>{
+      const w=document.createElement('div');
+      w.innerHTML='⚠️ <strong>Attention</strong> : Sauvegarde désactivée par le navigateur. Configurez Supabase ou utilisez Firefox/un serveur web.';
+      Object.assign(w.style,{position:'fixed',top:'0',left:'0',right:'0',background:'#C05621',color:'white',
+        padding:'10px 20px',fontSize:'13px',zIndex:'9999',textAlign:'center'});
+      document.body.appendChild(w);
+    },500);
+  }
+})();
+</script>
+</body>
+</html>
