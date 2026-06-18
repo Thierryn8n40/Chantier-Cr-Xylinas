@@ -609,6 +609,8 @@ function doLogin(){
 
   if(me.role==='admin'){
     document.getElementById('nav-settings').classList.remove('hidden');
+  }
+  if(me.role==='admin'||me.role==='assist'){
     document.getElementById('nav-share').classList.remove('hidden');
   }
   if(me.role==='admin'||me.role==='assist'){
@@ -736,7 +738,7 @@ function renderPlanning(){
       const isOn=myInter.includes(i);
       let tdCls=isCur?'curw':''; tdCls+=isVac?' vacw':'';
 
-      const canEdit=(isAdmin()&&vacMode)||(isAdmin()&&!vacMode)||(me.role==='co'&&me.cid===co.id);
+      const canEdit=(isAdmin()&&vacMode)||isAA()||(me.role==='co'&&me.cid===co.id);
 
       if(isVac&&!vacMode){
         html+=`<td class="${tdCls}"><div class="chk vac" title="Congés">—</div></td>`;
@@ -841,7 +843,7 @@ function renderDir(){
       <div class="cr">${co.addr?`📍 ${esc(co.addr)}`:'<span style="opacity:.5">📍 Adresse non renseignée</span>'}</div>
       <div class="cr">${co.email?`✉️ <a href="mailto:${esc(co.email)}">${esc(co.email)}</a>`:'<span style="opacity:.5">✉️ Email non renseigné</span>'}</div>
       <div class="cr">${co.tel?`📞 <a href="tel:${co.tel}">${esc(co.tel)}</a>`:'<span style="opacity:.5">📞 Tél. non renseigné</span>'}</div>
-      ${isAdmin()?`<div class="sep" style="margin:10px 0"></div>
+      ${isAA()?`<div class="sep" style="margin:10px 0"></div>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn bto" style="font-size:11px;padding:4px 10px" onclick="openEditCo('${co.id}')">✏️ Modifier</button>
           <span style="margin-left:auto;font-size:10px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">Code : ${co.code}</span>
@@ -1076,10 +1078,17 @@ function renderDocs(){
       </div>
       <div class="doc-acts">
         <a href="${esc(d.url)}" target="_blank" rel="noopener">👁 Ouvrir</a>
+        ${isAA()?`<button class="del-doc" style="background:#EBF4FF;color:var(--pd)" onclick="renameDoc('${esc(d.id)}')">✏️</button>`:''}
         ${canDel?`<button class="del-doc" onclick="deleteDoc('${esc(d.id)}')">🗑</button>`:''}
       </div>
     </div>`;
   }).join('')+'</div>';
+}
+
+function renameDoc(id){
+  const doc=(D.documents||[]).find(d=>d.id===id); if(!doc) return;
+  const n=prompt('Nouveau nom du document :',doc.name); if(!n||!n.trim()) return;
+  doc.name=n.trim(); save(); renderDocs(); toast('✅ Document renommé');
 }
 
 async function deleteDoc(id){
