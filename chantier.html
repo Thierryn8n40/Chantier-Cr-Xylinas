@@ -178,6 +178,12 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
   #tab-planning,#tab-directory,#tab-settings,#tab-documents{display:none!important}
 }
 @media(max-width:640px){main{padding:12px}.frow{grid-template-columns:1fr}}
+/* COMPANY FILTER CHIPS */
+#co-filter-bar{display:none;flex-wrap:wrap;gap:6px;padding:10px 0 4px}
+#co-filter-bar.visible{display:flex}
+.chip{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:white;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:.15s}
+.chip:hover{border-color:var(--p);color:var(--p)}
+.chip.chip-on{background:var(--p);color:white;border-color:var(--p)}
 
 .hidden{display:none!important}
 .mt12{margin-top:12px}
@@ -225,6 +231,7 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
   </nav>
 
   <main>
+  <div id="co-filter-bar"></div>
 
     <!-- DASHBOARD -->
     <div id="tab-dashboard" class="tab on">
@@ -294,8 +301,7 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
             <div style="font-size:12px;color:var(--muted)" id="cr-sub"></div>
           </div>
           <div class="row">
-            <select id="report-filter-co" class="aa-only hidden" onchange="renderReport()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12px;color:var(--txt)"><option value="">Toutes les entreprises</option></select>
-            <button class="btn bto aa-only hidden" onclick="window.print()">🖨️ Imprimer</button>
+<button class="btn bto aa-only hidden" onclick="window.print()">🖨️ Imprimer</button>
             <button class="btn bto aa-only hidden" onclick="exportJSON()">📤 Exporter</button>
             <button class="addbtn a-only hidden" onclick="newReport()">Nouveau CR</button>
           </div>
@@ -546,7 +552,22 @@ const DD = {
 DD.planning.vacs = [4,5,6,7,24,25];
 
 // ─── STATE ────────────────────────────────────────────────────
-let D = {}, me = null, vacMode = false;
+let D = {}, me = null, vacMode = false, coFilter = [];
+
+function toggleCoFilter(cid){
+  const idx=coFilter.indexOf(cid);
+  if(idx>-1) coFilter.splice(idx,1); else coFilter.push(cid);
+  renderCoFilter(); renderDash(); renderReport();
+}
+function clearCoFilter(){
+  coFilter=[]; renderCoFilter(); renderDash(); renderReport();
+}
+function renderCoFilter(){
+  const el=document.getElementById('co-filter-bar'); if(!el) return;
+  el.className=me?'visible':'';
+  el.innerHTML=`<button class="chip${coFilter.length===0?' chip-on':''}" onclick="clearCoFilter()">Tout</button>`+
+    D.companies.map(c=>`<button class="chip${coFilter.includes(c.id)?' chip-on':''}" onclick="toggleCoFilter('${c.id}')">${esc(c.name)}</button>`).join('');
+}
 
 function save(){
   // Sauvegarde locale (fallback)
@@ -632,17 +653,11 @@ function doLogin(){
   else if(me.role==='assist') b.textContent='📝 Assistante';
   else { const c=D.companies.find(x=>x.id===me.cid); b.textContent='🏗 '+(c?c.name:'Intervenant'); }
 
+  // Tous les utilisateurs : accès complet sauf Paramètres (admin uniquement)
+  document.getElementById('nav-share').classList.remove('hidden');
+  document.querySelectorAll('.aa-only,.a-only').forEach(el=>el.classList.remove('hidden'));
   if(me.role==='admin'){
     document.getElementById('nav-settings').classList.remove('hidden');
-  }
-  if(me.role==='admin'||me.role==='assist'){
-    document.getElementById('nav-share').classList.remove('hidden');
-  }
-  if(me.role==='admin'||me.role==='assist'){
-    document.querySelectorAll('.aa-only').forEach(el=>el.classList.remove('hidden'));
-  }
-  if(me.role==='admin'){
-    document.querySelectorAll('.a-only').forEach(el=>el.classList.remove('hidden'));
   }
   if(D.settings.color) applyColor(D.settings.color);
   if(D.project.logo) setLogo(D.project.logo);
@@ -650,7 +665,8 @@ function doLogin(){
 }
 
 function logout(){
-  me=null; vacMode=false;
+  me=null; vacMode=false; coFilter=[];
+  document.getElementById('co-filter-bar').className='';
   document.getElementById('login').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('acode').value='';
@@ -672,7 +688,7 @@ function tab(name, btn){
 }
 
 // ─── RENDER ──────────────────────────────────────────────────
-function renderAll(){ renderDash(); renderReport(); renderDir(); renderDocs(); if(isAdmin()) renderSettings(); }
+function renderAll(){ renderCoFilter(); renderDash(); renderReport(); renderDir(); renderDocs(); if(isAdmin()) renderSettings(); }
 
 function renderDash(){
   const tasks=D.tasks, u=tasks.filter(t=>t.s==='urgent').length,
@@ -694,7 +710,7 @@ function renderDash(){
 function renderTL(cid, status){
   const el=document.getElementById(cid);
   let tasks=D.tasks.filter(t=>t.s===status);
-  if(me.role==='co' && me.cid!=='mo') tasks=tasks.filter(t=>!t.ass||t.ass===me.cid||t.ass==='all');
+  if(coFilter.length>0) tasks=tasks.filter(t=>t.ass && coFilter.includes(t.ass));
   if(!tasks.length){ el.innerHTML='<p style="color:var(--muted);font-size:13px;padding:4px 0">Aucun élément</p>'; return; }
   el.innerHTML=tasks.map(t=>taskHTML(t)).join('');
 }
@@ -800,14 +816,6 @@ function renderReport(){
   document.getElementById('cr-sub').textContent=
     `Émis le ${today.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}${D.project.address?' — '+D.project.address:''}`;
 
-  // Peupler le filtre entreprise
-  const filterEl=document.getElementById('report-filter-co');
-  if(filterEl){
-    const cur=filterEl.value;
-    filterEl.innerHTML='<option value="">Toutes les entreprises</option>'+
-      D.companies.map(c=>`<option value="${c.id}"${c.id===cur?' selected':''}>${esc(c.name)}</option>`).join('');
-  }
-
   // Observations — champs éditables (admin/assist)
   const dateEl=document.getElementById('cr-date');
   const attEl=document.getElementById('cr-attendees');
@@ -842,9 +850,7 @@ function renderReport(){
   let html='';
   phases.forEach(ph=>{
     let tasks=D.tasks.filter(t=>t.ph===ph.id&&t.s!=='fait');
-    if(me.role==='co' && me.cid!=='mo') tasks=tasks.filter(t=>!t.ass||t.ass===me.cid);
-    const fc=document.getElementById('report-filter-co')?.value||'';
-    if(fc) tasks=tasks.filter(t=>t.ass===fc);
+    if(coFilter.length>0) tasks=tasks.filter(t=>t.ass && coFilter.includes(t.ass));
     if(!tasks.length) return;
     html+=`<div style="margin-bottom:18px"><h3 style="color:var(--pd);font-size:13px;margin-bottom:10px;padding-bottom:5px;border-bottom:2px solid var(--border)">${ph.name}</h3>`;
     sts.forEach(st=>{
@@ -895,7 +901,6 @@ function newReport(){
 // ─── DIRECTORY ───────────────────────────────────────────────
 function renderDir(){
   let cos=D.companies;
-  if(me.role==='co' && me.cid!=='mo') cos=cos.filter(c=>c.id===me.cid||c.id==='mo');
   document.getElementById('co-grid').innerHTML=cos.map(co=>`
     <div class="ccard">
       <div class="cchdr">
