@@ -299,6 +299,21 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
             <button class="addbtn a-only hidden" onclick="newReport()">Nouveau CR</button>
           </div>
         </div>
+        <!-- Observations de séance -->
+        <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:2px solid var(--border)">
+          <div class="aa-only hidden" id="cr-edit-zone">
+            <div class="frow" style="margin-bottom:10px">
+              <div class="fg"><label>Date de la réunion</label><input type="date" id="cr-date"></div>
+              <div class="fg"><label>Personnes présentes</label><input type="text" id="cr-attendees" placeholder="Thierry B., Jean D., …"></div>
+            </div>
+            <div class="fg">
+              <label>Observations générales &amp; remarques de séance</label>
+              <textarea id="cr-obs" rows="5" placeholder="Saisir ici les observations, décisions et remarques de la réunion de chantier…" style="resize:vertical"></textarea>
+            </div>
+            <button class="addbtn" onclick="saveObs()">💾 Enregistrer les observations</button>
+          </div>
+          <div id="cr-obs-display"></div>
+        </div>
         <div id="cr-body"></div>
       </div>
     </div>
@@ -568,6 +583,9 @@ function mergeD(){
   if(!D.planning.inter) D.planning.inter = {};
   if(!D.annotations) D.annotations = [];
   if(!D.documents)   D.documents   = [];
+  if(!D.project.crObs)       D.project.crObs       = '';
+  if(!D.project.crAttendees) D.project.crAttendees = '';
+  if(!D.project.crMeetDate)  D.project.crMeetDate  = '';
 }
 
 async function refresh(){
@@ -776,6 +794,26 @@ function renderReport(){
   document.getElementById('cr-sub').textContent=
     `Émis le ${today.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}${D.project.address?' — '+D.project.address:''}`;
 
+  // Observations — champs éditables (admin/assist)
+  const dateEl=document.getElementById('cr-date');
+  const attEl=document.getElementById('cr-attendees');
+  const obsEl=document.getElementById('cr-obs');
+  if(dateEl) dateEl.value=D.project.crMeetDate||'';
+  if(attEl)  attEl.value=D.project.crAttendees||'';
+  if(obsEl)  obsEl.value=D.project.crObs||'';
+
+  // Affichage lecture seule (visible par tous dont les entreprises)
+  const disp=document.getElementById('cr-obs-display');
+  if(disp){
+    const hasObs=D.project.crObs||D.project.crAttendees||D.project.crMeetDate;
+    disp.innerHTML=hasObs?`
+      <div style="background:var(--bg);border-radius:var(--r);padding:14px 16px;font-size:13px">
+        ${D.project.crMeetDate?`<div style="margin-bottom:6px"><strong>📅 Réunion du :</strong> ${fd(D.project.crMeetDate)}</div>`:''}
+        ${D.project.crAttendees?`<div style="margin-bottom:6px"><strong>👥 Présents :</strong> ${esc(D.project.crAttendees)}</div>`:''}
+        ${D.project.crObs?`<div style="margin-top:8px;white-space:pre-wrap;line-height:1.6"><strong>📝 Observations :</strong><br>${esc(D.project.crObs)}</div>`:''}
+      </div>`:'<div style="color:var(--muted);font-size:12px;font-style:italic">Aucune observation saisie pour ce CR.</div>';
+  }
+
   const phases=[
     {id:'rdc',name:'Phase 1 — Rez-de-chaussée'},
     {id:'parentale',name:'Phase 2 — Chambre &amp; Salle de bain parentales'},
@@ -823,10 +861,18 @@ function renderReport(){
   document.getElementById('cr-body').innerHTML=html;
 }
 
+function saveObs(){
+  D.project.crMeetDate = document.getElementById('cr-date').value;
+  D.project.crAttendees = document.getElementById('cr-attendees').value.trim();
+  D.project.crObs = document.getElementById('cr-obs').value.trim();
+  if(save()){ toast('✅ Observations enregistrées'); renderReport(); }
+}
+
 function newReport(){
-  if(!confirm('Incrémenter le numéro de compte rendu ?')) return;
+  if(!confirm('Incrémenter le numéro de compte rendu ? Les observations seront remises à zéro pour le nouveau CR.')) return;
   D.project.crNum=(D.project.crNum||1)+1;
   D.project.crDate=new Date().toISOString().split('T')[0];
+  D.project.crMeetDate=''; D.project.crAttendees=''; D.project.crObs='';
   save(); renderReport();
 }
 
