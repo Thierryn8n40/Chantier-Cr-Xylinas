@@ -564,7 +564,7 @@ function clearCoFilter(){
 }
 function renderCoFilter(){
   const el=document.getElementById('co-filter-bar'); if(!el) return;
-  el.className=me?'visible':'';
+  el.style.display=me?'flex':'none';
   el.innerHTML=`<button class="chip${coFilter.length===0?' chip-on':''}" onclick="clearCoFilter()">Tout</button>`+
     D.companies.map(c=>`<button class="chip${coFilter.includes(c.id)?' chip-on':''}" onclick="toggleCoFilter('${c.id}')">${esc(c.name)}</button>`).join('');
 }
@@ -666,7 +666,7 @@ function doLogin(){
 
 function logout(){
   me=null; vacMode=false; coFilter=[];
-  document.getElementById('co-filter-bar').className='';
+  document.getElementById('co-filter-bar').style.display='none';
   document.getElementById('login').style.display='flex';
   document.getElementById('app').style.display='none';
   document.getElementById('acode').value='';
@@ -723,8 +723,8 @@ function taskHTML(t){
     const ac=D.companies.find(c=>c.id===a.cid)||{name:a.cid==='admin'?'Direction':a.cid};
     return `<div class="ann"><div class="annh"><span class="annby">${esc(ac.name)} <span class="sb ${a.s}">${slbl(a.s)}</span></span><span style="font-size:10px;color:var(--muted)">${fd(a.dt)}</span></div><div class="anntxt">${esc(a.txt)}</div></div>`;
   }).join('')}</div>`:'';
-  const editBtn=isAA()?`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openEditTask('${t.id}')">✏️</button>`:'';
-  const doneBtn=isAA()&&t.s!=='fait'?`<button class="btn btg" style="padding:3px 9px;font-size:11px" onclick="markDone('${t.id}')">✓ Traité</button>`:'';
+  const editBtn=me?`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openEditTask('${t.id}')">✏️</button>`:'';
+  const doneBtn=(me&&t.s!=='fait')?`<button class="btn btg" style="padding:3px 9px;font-size:11px" onclick="markDone('${t.id}')">✓ Traité</button>`:'';
   const annBtn=`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openAnn('${t.id}')" title="Annotation">💬${anns.length?' '+anns.length:''}</button>`;
   return `<div class="ti ${t.s}" id="ti-${t.id}">
     <div class="tb">
@@ -911,10 +911,10 @@ function renderDir(){
       <div class="cr">${co.addr?`📍 ${esc(co.addr)}`:'<span style="opacity:.5">📍 Adresse non renseignée</span>'}</div>
       <div class="cr">${co.email?`✉️ <a href="mailto:${esc(co.email)}">${esc(co.email)}</a>`:'<span style="opacity:.5">✉️ Email non renseigné</span>'}</div>
       <div class="cr">${co.tel?`📞 <a href="tel:${co.tel}">${esc(co.tel)}</a>`:'<span style="opacity:.5">📞 Tél. non renseigné</span>'}</div>
-      ${isAA()?`<div class="sep" style="margin:10px 0"></div>
+      ${me?`<div class="sep" style="margin:10px 0"></div>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn bto" style="font-size:11px;padding:4px 10px" onclick="openEditCo('${co.id}')">✏️ Modifier</button>
-          <span style="margin-left:auto;font-size:10px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">Code : ${co.code}</span>
+          ${isAdmin()?`<span style="margin-left:auto;font-size:10px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">Code : ${co.code}</span>`:''}
         </div>`:''}
     </div>`).join('');
 }
