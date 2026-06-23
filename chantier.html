@@ -71,6 +71,7 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
 .ti.a-faire{border-left:4px solid var(--todo)}
 .ti.attendu{border-left:4px solid var(--wait)}
 .ti.fait{border-left:4px solid var(--done);opacity:.65}
+.ti.archive{border-left:4px solid #D4A017;opacity:.5;background:#FFFDF0}
 .tb{flex:1;min-width:0}
 .ttl{font-weight:600;margin-bottom:3px;word-break:break-word}
 .tmeta{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -268,6 +269,14 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
         </div>
         <div id="tl-done" class="clps"></div>
       </div>
+
+      <div class="card" id="card-archive" style="display:none;border:2px solid #D4A017;background:#FFFDF0">
+        <div class="ch">
+          <span class="ct">📦 Archives <span style="font-size:11px;font-weight:400;color:#92400E">(admin uniquement)</span></span>
+          <button class="cbtn" onclick="toggleC('tl-archive',this)">▼ Afficher</button>
+        </div>
+        <div id="tl-archive" class="clps"></div>
+      </div>
     </div>
 
     <!-- PLANNING -->
@@ -410,6 +419,7 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
           <option value="urgent">🔴 Urgent</option>
           <option value="a-faire">🔵 À faire</option>
           <option value="attendu">🟡 En attente / Suivi</option>
+          <option value="fait">✅ Traité</option>
         </select>
       </div>
       <div class="fg"><label>Phase</label>
@@ -705,6 +715,9 @@ function renderDash(){
   renderTL('tl-afaire','a-faire');
   renderTL('tl-attendu','attendu');
   renderTL('tl-done','fait');
+  const archCard=document.getElementById('card-archive');
+  if(archCard){ archCard.style.display=isAdmin()?'block':'none'; }
+  if(isAdmin()) renderTL('tl-archive','archive');
 }
 
 function renderTL(cid, status){
@@ -723,8 +736,20 @@ function taskHTML(t){
     const ac=D.companies.find(c=>c.id===a.cid)||{name:a.cid==='admin'?'Direction':a.cid};
     return `<div class="ann"><div class="annh"><span class="annby">${esc(ac.name)} <span class="sb ${a.s}">${slbl(a.s)}</span></span><span style="font-size:10px;color:var(--muted)">${fd(a.dt)}</span></div><div class="anntxt">${esc(a.txt)}</div></div>`;
   }).join('')}</div>`:'';
-  const editBtn=me?`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openEditTask('${t.id}')">✏️</button>`:'';
-  const doneBtn=(me&&t.s!=='fait')?`<button class="btn btg" style="padding:3px 9px;font-size:11px" onclick="markDone('${t.id}')">✓ Traité</button>`:'';
+  // Annotation automatique : qui a marqué traité et quand
+  let doneInfo='';
+  if(t.s==='fait'||t.s==='archive'){
+    let who='';
+    if(t.doneBy==='admin') who='Direction';
+    else if(t.doneBy==='assist') who='Assistante';
+    else if(t.doneBy){ const dc=D.companies.find(c=>c.id===t.doneBy); who=dc?dc.name:t.doneBy; }
+    if(who||t.doneAt) doneInfo=`<span style="font-size:10px;color:var(--done)">✅ Traité${t.doneAt?' le '+fd(t.doneAt):''}${who?' par '+who:''}</span>`;
+    if(t.s==='archive'&&t.archivedAt) doneInfo+=`<span style="font-size:10px;color:#92400E"> · 📦 Archivé le ${fd(t.archivedAt)}</span>`;
+  }
+  const editBtn=(me&&t.s!=='archive')?`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openEditTask('${t.id}')">✏️</button>`:'';
+  const doneBtn=(me&&t.s!=='fait'&&t.s!=='archive')?`<button class="btn btg" style="padding:3px 9px;font-size:11px" onclick="markDone('${t.id}')">✓ Traité</button>`:'';
+  const archiveBtn=(isAdmin()&&t.s==='fait')?`<button class="btn bto" style="padding:3px 9px;font-size:11px;color:#92400E;border-color:#D4A017" onclick="archiveTask('${t.id}')" title="Archiver définitivement">📦</button>`:'';
+  const deleteBtn=(isAdmin()&&t.s==='archive')?`<button class="btn btd" style="padding:3px 9px;font-size:11px" onclick="deleteTask('${t.id}')" title="Supprimer définitivement">🗑</button>`:'';
   const annBtn=`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openAnn('${t.id}')" title="Annotation">💬${anns.length?' '+anns.length:''}</button>`;
   return `<div class="ti ${t.s}" id="ti-${t.id}">
     <div class="tb">
@@ -734,10 +759,11 @@ function taskHTML(t){
         ${t.due?`<span>📅 ${fd(t.due)}</span>`:''}
         ${ph}
         ${t.note?`<span style="font-style:italic">${esc(t.note)}</span>`:''}
+        ${doneInfo}
       </div>
       ${annHtml}
     </div>
-    <div class="tact">${editBtn}${doneBtn}${annBtn}</div>
+    <div class="tact">${editBtn}${doneBtn}${archiveBtn}${deleteBtn}${annBtn}</div>
   </div>`;
 }
 
@@ -969,6 +995,9 @@ function openEditTask(id){
   document.getElementById('tdue').value=t.due||'';
   document.getElementById('tnote').value=t.note||'';
   fillAssign(t.ass||'');
+  // Verrouiller le statut pour les non-admins sur les tâches déjà traitées
+  const statusSel=document.getElementById('tstat');
+  statusSel.disabled=(t.s==='fait'||t.s==='archive')&&!isAdmin();
   openM('m-task');
 }
 
@@ -981,18 +1010,64 @@ function saveTask(){
   const title=document.getElementById('tdesc').value.trim();
   if(!title){ alert('La description est requise.'); return; }
   const eid=document.getElementById('eid').value;
+  const newAss=document.getElementById('tassign').value;
   const data={title,s:document.getElementById('tstat').value,ph:document.getElementById('tphase').value,
-    ass:document.getElementById('tassign').value,due:document.getElementById('tdue').value,
+    ass:newAss,due:document.getElementById('tdue').value,
     note:document.getElementById('tnote').value.trim()};
-  if(eid){ const t=D.tasks.find(x=>x.id===eid); if(t) Object.assign(t,data); }
-  else { D.tasks.push({id:'t'+Date.now(),...data,dt:new Date().toISOString().split('T')[0]}); }
+  // Réactiver le select (il peut avoir été désactivé en édition)
+  document.getElementById('tstat').disabled=false;
+  let prevAss=null;
+  if(eid){
+    const t=D.tasks.find(x=>x.id===eid);
+    if(t){
+      prevAss=t.ass||null;
+      // Sécurité : un non-admin ne peut pas sortir une tâche de "Traité" ou "Archive"
+      if((t.s==='fait'||t.s==='archive')&&!isAdmin()) data.s=t.s;
+      Object.assign(t,data);
+    }
+  } else {
+    D.tasks.push({id:'t'+Date.now(),...data,dt:new Date().toISOString().split('T')[0]});
+  }
   if(save()){ toast('✅ Action enregistrée'); closeM('m-task'); renderAll(); }
+  // Mailto automatique si nouvelle assignation à une entreprise ayant un email
+  if(newAss && newAss!==prevAss){
+    const co=D.companies.find(c=>c.id===newAss);
+    if(co && co.email){
+      const dest=co.contact?co.contact+' ('+co.name+')':co.name;
+      const subj=encodeURIComponent('[Chantier] Action assignée : '+data.title);
+      const body=encodeURIComponent('Bonjour '+dest+',\n\nUne action vous a été assignée sur le chantier "'+D.project.name+'" :\n\n'
+        +data.title
+        +(data.note?'\n\nNote : '+data.note:'')
+        +(data.due?'\nÉchéance : '+data.due:'')
+        +'\n\nAccès : https://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html'
+        +'\n\nCordialement,\nThierry Bethfort — Maître d\'œuvre');
+      window.open('mailto:'+co.email+'?subject='+subj+'&body='+body);
+    }
+  }
 }
 
 function markDone(id){
   const t=D.tasks.find(x=>x.id===id); if(!t) return;
-  t.s='fait'; t.done=new Date().toISOString().split('T')[0];
+  t.s='fait';
+  t.done=new Date().toISOString().split('T')[0];
+  t.doneAt=t.done;
+  t.doneBy=me.role==='co'?me.cid:me.role;
   save(); renderAll();
+}
+
+function archiveTask(id){
+  if(!isAdmin()) return;
+  if(!confirm('Archiver cette tâche ? Elle sera déplacée dans les Archives et ne pourra être supprimée que par l\'administrateur.')) return;
+  const t=D.tasks.find(x=>x.id===id); if(!t) return;
+  t.s='archive'; t.archivedAt=new Date().toISOString().split('T')[0];
+  save(); renderAll(); toast('📦 Tâche archivée');
+}
+
+function deleteTask(id){
+  if(!isAdmin()) return;
+  if(!confirm('Supprimer définitivement cette tâche des archives ? Cette action est irréversible.')) return;
+  D.tasks=D.tasks.filter(x=>x.id!==id);
+  save(); renderAll(); toast('🗑 Tâche supprimée définitivement');
 }
 
 // ─── COMPANIES ───────────────────────────────────────────────
@@ -1244,7 +1319,7 @@ function shadeColor(c,p){
 // ─── UTILS ───────────────────────────────────────────────────
 function esc(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fd(d){ if(!d) return ''; try{ return new Date(d+'T00:00:00').toLocaleDateString('fr-FR'); } catch(e){ return d; } }
-function slbl(s){ return {urgent:'Urgent','a-faire':'À faire',attendu:'En attente',fait:'Traité'}[s]||s; }
+function slbl(s){ return {urgent:'Urgent','a-faire':'À faire',attendu:'En attente',fait:'Traité',archive:'Archivé'}[s]||s; }
 
 // ─── INIT ────────────────────────────────────────────────────
 (async()=>{
