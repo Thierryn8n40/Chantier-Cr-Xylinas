@@ -73,7 +73,8 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
 .ti.fait{border-left:4px solid var(--done);opacity:.65}
 .ti.archive{border-left:4px solid #D4A017;opacity:.5;background:#FFFDF0}
 .tb{flex:1;min-width:0}
-.ttl{font-weight:600;margin-bottom:3px;word-break:break-word}
+.ttl{font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.ttl[data-title]:hover::after{content:attr(data-title);position:absolute;left:0;top:calc(100% + 5px);background:var(--pd);color:white;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:400;white-space:normal;width:max-content;max-width:540px;z-index:300;box-shadow:0 4px 18px rgba(0,0,0,.28);line-height:1.6;pointer-events:none}
 .tmeta{font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .tact{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
 
@@ -753,7 +754,7 @@ function taskHTML(t){
   const annBtn=`<button class="btn bto" style="padding:3px 9px;font-size:11px" onclick="openAnn('${t.id}')" title="Annotation">💬${anns.length?' '+anns.length:''}</button>`;
   return `<div class="ti ${t.s}" id="ti-${t.id}">
     <div class="tb">
-      <div class="ttl">${esc(t.title)}</div>
+      <div class="ttl" data-title="${esc(t.title)}">${esc(t.title)}</div>
       <div class="tmeta">
         ${co?`<span>👷 ${esc(co.name)}</span>`:''}
         ${t.due?`<span>📅 ${fd(t.due)}</span>`:''}
