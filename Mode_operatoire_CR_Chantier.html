@@ -103,23 +103,25 @@
         <h4>👑 Maître d'œuvre<span>Thierry Bethfort — Administrateur</span></h4>
         <ul>
           <li>Accès complet à toutes les fonctions</li>
-          <li>Créer / modifier / supprimer des tâches</li>
+          <li>Créer / modifier / archiver des tâches</li>
           <li>Gérer les entreprises et les codes d'accès</li>
-          <li>Modifier le planning</li>
+          <li>Modifier le planning (toutes lignes)</li>
           <li>Uploader et supprimer des documents</li>
           <li>Modifier les paramètres du projet</li>
-          <li>Exporter le CR</li>
+          <li>Exporter / imprimer le CR</li>
+          <li>Recevoir les notifications tâches traitées et commentaires</li>
         </ul>
       </div>
       <div class="role-card moa">
-        <h4>🏠 Maître d'ouvrage<span>Client — Accès étendu</span></h4>
+        <h4>🏠 Maître d'ouvrage<span>Client — Mêmes droits que les entreprises</span></h4>
         <ul>
           <li>Créer / modifier des tâches</li>
+          <li>Marquer des tâches comme traitées</li>
           <li>Uploader des documents</li>
           <li>Annoter les tâches</li>
-          <li>Voir tout le tableau de bord</li>
+          <li>Voir l'intégralité du tableau de bord</li>
+          <li>Filtrer les tâches par entreprise</li>
           <li>Modifier le planning</li>
-          <li>Exporter le CR</li>
           <li style="color:#C05621">✗ Paramètres non accessibles</li>
         </ul>
       </div>
@@ -127,6 +129,7 @@
         <h4>📝 Assistante<span>Collaborateur interne</span></h4>
         <ul>
           <li>Créer / modifier des tâches</li>
+          <li>Marquer des tâches comme traitées</li>
           <li>Uploader et renommer des documents</li>
           <li>Annoter les tâches</li>
           <li>Voir tout le tableau de bord</li>
@@ -138,11 +141,14 @@
       <div class="role-card co">
         <h4>🏗️ Entreprise<span>Intervenants chantier</span></h4>
         <ul>
-          <li>Voir les tâches et le CR</li>
-          <li>Ajouter des annotations</li>
-          <li>Mettre à jour <strong>sa propre ligne</strong> de planning</li>
-          <li>Consulter les documents</li>
-          <li>Voir l'annuaire</li>
+          <li>Créer / modifier des tâches</li>
+          <li><strong>Marquer ses tâches comme traitées</strong></li>
+          <li>Ajouter des commentaires (annotations)</li>
+          <li>Voir les tâches de tous les lots</li>
+          <li>Filtrer par entreprise</li>
+          <li>Mettre à jour sa ligne de planning</li>
+          <li>Consulter les documents et l'annuaire</li>
+          <li style="color:#C05621">✗ Paramètres non accessibles</li>
         </ul>
       </div>
     </div>
@@ -170,21 +176,66 @@
       </tbody>
     </table>
 
+    <!-- NOTIFICATIONS -->
+    <h2>📧 Notifications par email</h2>
+    <p>Le système envoie automatiquement des notifications par email à chaque action importante. Ces emails s'ouvrent dans votre client mail (Outlook…) : <strong>vérifiez qu'un brouillon s'est bien ouvert et cliquez Envoyer</strong>.</p>
+
+    <table>
+      <thead><tr><th>Événement</th><th>Qui reçoit</th></tr></thead>
+      <tbody>
+        <tr><td>Tâche assignée à une entreprise</td><td>L'entreprise concernée reçoit le détail de la tâche</td></tr>
+        <tr><td>Entreprise marque une tâche "Traité"</td><td>Thierry Bethfort reçoit une confirmation</td></tr>
+        <tr><td>Entreprise ajoute un commentaire</td><td>Thierry Bethfort reçoit le commentaire</td></tr>
+        <tr><td>Thierry Bethfort commente une tâche d'une entreprise</td><td>Cette entreprise reçoit le commentaire</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip">
+      <strong>💡 Lien direct dans chaque email</strong>
+      <p>Chaque notification contient un lien "Accès direct" qui ouvre le chantier avec <strong>votre code déjà pré-rempli</strong>. Cliquez simplement sur <em>Accéder</em> — vous n'avez rien à saisir.</p>
+    </div>
+
+    <div class="warn">
+      <strong>⚠️ Le mail ne part pas tout seul</strong>
+      <p>L'application ouvre un brouillon dans votre client mail (Outlook, Thunderbird…). Vérifiez qu'une fenêtre s'est ouverte et cliquez <strong>Envoyer</strong>. Si rien ne s'ouvre, vérifiez les paramètres popup de votre navigateur.</p>
+    </div>
+
     <!-- CE QUE FAIT UNE ENTREPRISE -->
     <h2>🏗️ Ce que fait une entreprise — étape par étape</h2>
 
-    <h3>Ajouter une annotation sur une tâche</h3>
+    <h3>Recevoir et ouvrir une tâche assignée</h3>
     <ol>
-      <li>Allez sur l'onglet <strong>Compte rendu</strong></li>
-      <li>Trouvez la tâche qui vous concerne</li>
-      <li>Cliquez le bouton <strong>💬 Annoter</strong> sur la tâche</li>
-      <li>Saisissez votre commentaire (avancement, question, information...)</li>
-      <li>Cliquez <strong>Enregistrer</strong> → votre annotation apparaît immédiatement sous la tâche</li>
+      <li>Vous recevez un email "<strong>[Chantier] Action assignée</strong>" de Thierry Bethfort</li>
+      <li>Cliquez le lien "Accès direct" dans l'email — votre code est déjà pré-rempli</li>
+      <li>Cliquez <strong>Accéder</strong> → le tableau de bord s'ouvre directement</li>
+      <li>Retrouvez la tâche dans les sections <em>Urgent</em>, <em>À faire</em> ou <em>En attente</em></li>
+    </ol>
+
+    <h3>Marquer une tâche comme traitée</h3>
+    <ol>
+      <li>Repérez la tâche dans le <strong>Tableau de bord</strong></li>
+      <li>Cliquez le bouton <strong>✓ Traité</strong> à droite de la tâche</li>
+      <li>La tâche passe dans la section "Éléments traités" — votre nom et la date sont enregistrés automatiquement</li>
+      <li>Thierry Bethfort reçoit automatiquement une notification par email</li>
+    </ol>
+
+    <div class="tip">
+      <strong>💡 Tâche protégée après validation</strong>
+      <p>Une fois marquée "Traité", une tâche ne peut plus changer de statut — sauf par l'administrateur. Vous pouvez toujours ajouter un commentaire dessus.</p>
+    </div>
+
+    <h3>Ajouter un commentaire sur une tâche</h3>
+    <ol>
+      <li>Repérez la tâche dans le <strong>Tableau de bord</strong> ou le <strong>Compte rendu</strong></li>
+      <li>Survolez le titre avec la souris pour lire le texte complet si il est tronqué</li>
+      <li>Cliquez le bouton <strong>💬</strong> à droite de la tâche</li>
+      <li>Saisissez votre commentaire (avancement, question, information…)</li>
+      <li>Cliquez <strong>Enregistrer</strong> → votre annotation apparaît sous la tâche, et Thierry Bethfort reçoit une notification</li>
     </ol>
 
     <div class="tip">
       <strong>💡 Bon à savoir</strong>
-      <p>Chaque entreprise ne voit que ses propres annotations en mode édition, mais peut lire les annotations des autres. Votre annotation est horodatée et porte le nom de votre entreprise.</p>
+      <p>Votre commentaire est horodaté et porte le nom de votre entreprise. Tout le monde peut lire les commentaires — c'est le canal officiel de suivi, plus fiable qu'un SMS.</p>
     </div>
 
     <h3>Mettre à jour votre planning</h3>
