@@ -387,6 +387,10 @@ main{flex:1;padding:20px;max-width:1100px;width:100%;margin:0 auto}
           <div class="fg"><label>Code Admin</label><input id="s-acode" type="text" placeholder="ADMIN2026"></div>
           <div class="fg"><label>Code Assistante</label><input id="s-asscode" type="text" placeholder="ASSIST2026"></div>
         </div>
+        <div class="fg">
+          <label>Email administrateur <span style="font-weight:400;color:var(--muted)">(reçoit les notifications tâches traitées et commentaires)</span></label>
+          <input type="email" id="s-admin-email" placeholder="thierry.bethfort@technopieux.fr">
+        </div>
         <button class="addbtn" onclick="saveSettings()">💾 Sauvegarder</button>
       </div>
 
@@ -539,7 +543,7 @@ const SK = 'cr_chantier_v2';
 
 const DD = {
   project:{ name:'Compte Rendu de Chantier', address:'', startDate:'2026-07-06', endDate:'2027-05-10', crNum:1, crDate:'2026-07-06', freq:'weekly', logo:null },
-  settings:{ adminCode:'ADMIN2026', assistCode:'ASSIST2026', color:'#2B6CB0' },
+  settings:{ adminCode:'ADMIN2026', assistCode:'ASSIST2026', color:'#2B6CB0', adminEmail:'thierry.bethfort@technopieux.fr' },
   companies:[
     {id:'mo',    name:"Maître d'Ouvrage",           role:'Client / Maître d\'ouvrage',      addr:'',email:'',tel:'',contact:'',code:'MO2026',    ini:'MO'},
     {id:'macon', name:'Maçonnerie',                   role:'Gros œuvre',                      addr:'',email:'',tel:'',contact:'',code:'MACON2026', ini:'MA'},
@@ -620,6 +624,7 @@ function mergeD(){
   if(!D.project.crObs)       D.project.crObs       = '';
   if(!D.project.crAttendees) D.project.crAttendees = '';
   if(!D.project.crMeetDate)  D.project.crMeetDate  = '';
+  if(D.settings.adminEmail===undefined) D.settings.adminEmail='thierry.bethfort@technopieux.fr';
 }
 
 async function refresh(){
@@ -955,6 +960,7 @@ function renderSettings(){
   document.getElementById('s-color').value=D.settings.color||'#2B6CB0';
   document.getElementById('s-acode').value=D.settings.adminCode||'';
   document.getElementById('s-asscode').value=D.settings.assistCode||'';
+  document.getElementById('s-admin-email').value=D.settings.adminEmail||'';
   document.getElementById('codes-list').innerHTML=D.companies.map(c=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);border-radius:var(--r);margin-bottom:6px;font-size:12px">
       <span><strong>${esc(c.ini)}</strong> — ${esc(c.name)}</span>
@@ -968,6 +974,7 @@ function saveSettings(){
   D.project.freq=document.getElementById('s-freq').value;
   const nc=document.getElementById('s-acode').value.trim(); if(nc) D.settings.adminCode=nc;
   const nas=document.getElementById('s-asscode').value.trim(); if(nas) D.settings.assistCode=nas;
+  D.settings.adminEmail=document.getElementById('s-admin-email').value.trim();
   D.settings.color=document.getElementById('s-color').value;
   applyColor(D.settings.color);
   document.getElementById('htitle').textContent=D.project.name;
@@ -1041,7 +1048,7 @@ function saveTask(){
         +data.title
         +(data.note?'\n\nNote : '+data.note:'')
         +(data.due?'\nÉchéance : '+data.due:'')
-        +'\n\nAccès : https://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html'
+        +'\n\nAccès direct (code pré-rempli) :\nhttps://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html?code='+encodeURIComponent(co.code)
         +'\n\nCordialement,\nThierry Bethfort — Maître d\'œuvre');
       window.open('mailto:'+co.email+'?subject='+subj+'&body='+body);
     }
@@ -1055,6 +1062,14 @@ function markDone(id){
   t.doneAt=t.done;
   t.doneBy=me.role==='co'?me.cid:me.role;
   save(); renderAll();
+  // Notification à l'admin si un non-admin marque la tâche comme traitée
+  if(!isAdmin() && D.settings.adminEmail){
+    const who=me.role==='co'?(D.companies.find(c=>c.id===me.cid)||{name:me.cid}).name:'Assistante';
+    const adminLink='https://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html?code='+encodeURIComponent(D.settings.adminCode);
+    const subj=encodeURIComponent('[Chantier ✅] Tâche traitée : '+t.title);
+    const body=encodeURIComponent('Bonjour Thierry,\n\n'+who+' a marqué la tâche suivante comme traitée :\n\n"'+t.title+'"\n\nDate : '+t.doneAt+'\n\nAccès direct au chantier :\n'+adminLink+'\n\nCordialement');
+    window.open('mailto:'+D.settings.adminEmail+'?subject='+subj+'&body='+body);
+  }
 }
 
 function archiveTask(id){
@@ -1115,11 +1130,33 @@ function openAnn(tid){
 function saveAnn(){
   const txt=document.getElementById('ann-txt').value.trim();
   if(!txt){ alert('Le commentaire est requis.'); return; }
-  D.annotations.push({id:'a'+Date.now(),tid:document.getElementById('ann-tid').value,
+  const tid=document.getElementById('ann-tid').value;
+  D.annotations.push({id:'a'+Date.now(),tid,
     cid:me.role==='co'?me.cid:'admin',txt,
     s:document.getElementById('ann-stat').value,
     dt:new Date().toISOString().split('T')[0]});
   if(save()){ toast('✅ Annotation envoyée'); closeM('m-ann'); renderAll(); }
+  // Notifications email bidirectionnelles
+  const annTask=D.tasks.find(x=>x.id===tid);
+  const taskTitle=annTask?annTask.title:'(tâche)';
+  if(!isAdmin() && D.settings.adminEmail){
+    // Entreprise ou assistante → notification à l'admin
+    const who=me.role==='co'?(D.companies.find(c=>c.id===me.cid)||{name:me.cid}).name:'Assistante';
+    const adminLink='https://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html?code='+encodeURIComponent(D.settings.adminCode);
+    const subj=encodeURIComponent('[Chantier 💬] Commentaire de '+who+' : '+taskTitle);
+    const body=encodeURIComponent('Bonjour Thierry,\n\n'+who+' a ajouté un commentaire sur la tâche :\n\n"'+taskTitle+'"\n\nCommentaire :\n'+txt+'\n\nAccès direct au chantier :\n'+adminLink+'\n\nCordialement');
+    window.open('mailto:'+D.settings.adminEmail+'?subject='+subj+'&body='+body);
+  } else if(isAdmin() && annTask && annTask.ass){
+    // Admin → notification à l'entreprise assignée
+    const co=D.companies.find(c=>c.id===annTask.ass);
+    if(co && co.email){
+      const coLink='https://thierryn8n40.github.io/Chantier-Cr-Xylinas/chantier.html?code='+encodeURIComponent(co.code);
+      const dest=co.contact?co.contact+' ('+co.name+')':co.name;
+      const subj=encodeURIComponent('[Chantier 💬] Commentaire de la maîtrise d\'œuvre : '+taskTitle);
+      const body=encodeURIComponent('Bonjour '+dest+',\n\nUn commentaire a été ajouté sur la tâche :\n\n"'+taskTitle+'"\n\nCommentaire :\n'+txt+'\n\nAccès direct (code pré-rempli) :\n'+coLink+'\n\nCordialement,\nThierry Bethfort — Maître d\'œuvre');
+      window.open('mailto:'+co.email+'?subject='+subj+'&body='+body);
+    }
+  }
 }
 
 // ─── LOGO ────────────────────────────────────────────────────
@@ -1329,6 +1366,9 @@ function slbl(s){ return {urgent:'Urgent','a-faire':'À faire',attendu:'En atten
   await load();
   document.getElementById('lp-name').textContent=D.project.name;
   if(D.project.logo) setLogo(D.project.logo);
+  // Pré-remplir le code depuis l'URL (?code=...)
+  const _urlCode=new URLSearchParams(window.location.search).get('code');
+  if(_urlCode) document.getElementById('acode').value=_urlCode;
 
   // Affiche le bouton refresh si Supabase est actif
   if(sb) document.getElementById('refresh-btn').style.display='inline-block';
